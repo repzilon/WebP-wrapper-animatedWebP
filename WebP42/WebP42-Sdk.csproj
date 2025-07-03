@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '17.0' ">
+    <TargetFrameworks>net20;net46;netcoreapp2.1;netcoreapp3.1;net5.0-windows;net6.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' != '17.0' ">
+    <TargetFrameworks>net20;net40;net46;netcoreapp2.1</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <DebugType>portable</DebugType>
+    <RootNamespace>WebP42</RootNamespace>
+    <AssemblyName>WebP42</AssemblyName>
+	<NoWarn>NETSDK1138;NU1902;NU1903</NoWarn>
+	<RuntimeIdentifiers>win</RuntimeIdentifiers>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WebPWrapper\WebPWrapper-Sdk.csproj" />
+  </ItemGroup>
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <Policies>
+          <StandardHeader IncludeInNewFiles="True" Text=" &#xA; ${FileName}&#xA; &#xA; Author:&#xA;      ${AuthorName} &lt;${AuthorEmail}&gt;&#xA;&#xA; Copyright (c) ${Year} ${CopyrightHolder}&#xA;&#xA;This program is free software: you can redistribute it and/or modify&#xA;it under the terms of the GNU Affero General Public License as published by&#xA;the Free Software Foundation, either version 3 of the License, or&#xA;(at your option) any later version.&#xA;&#xA;This program is distributed in the hope that it will be useful,&#xA;but WITHOUT ANY WARRANTY; without even the implied warranty of&#xA;MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the&#xA;GNU Affero General Public License for more details.&#xA;&#xA;You should have received a copy of the GNU Affero General Public License&#xA;along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.&#xA;" />
+        </Policies>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
+</Project>
