@@ -1,21 +1,20 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '17.0' ">
-    <TargetFrameworks>net20;net46;netcoreapp2.1;netcoreapp3.1;net5.0-windows;net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>net20;net46;net5.0-windows;net6.0-windows;netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' != '17.0' ">
     <TargetFrameworks>net20;net40;net46;netcoreapp2.1</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup>
-    <ProjectGuid>{935F7370-4266-43D1-B907-1322BDBCD6ED}</ProjectGuid>
     <RootNamespace>WebPWrapperLib</RootNamespace>
     <AssemblyName>WebPWrapperLib</AssemblyName>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugType>full</DebugType>
+    <UseWindowsForms>true</UseWindowsForms>
+    <NoWarn>NETSDK1138;NU1902;NU1903</NoWarn>
+	<DebugType>portable</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
+    <DocumentationFile>WebPWrapperLib.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="x64\libsharpyuv.dll">
@@ -43,7 +42,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-    <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
     <PackageReference Include="System.Drawing.Common" Version="[4.7.3]" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">

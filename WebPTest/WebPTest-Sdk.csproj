@@ -1,7 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '17.0' ">
-    <TargetFrameworks>net46;netcoreapp3.1;net5.0-windows;net6.0-windows</TargetFrameworks>
-    <NoWarn>NETSDK1138</NoWarn>
+    <TargetFrameworks>net46;net5.0-windows;net6.0-windows;netcoreapp3.1</TargetFrameworks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' != '17.0' ">
     <TargetFrameworks>net20;net40;net46</TargetFrameworks>
@@ -14,6 +13,8 @@
     <RootNamespace>WebPTest</RootNamespace>
     <AssemblyName>WebPTest</AssemblyName>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <NoWarn>NETSDK1138</NoWarn>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="WebPExample.cs">
