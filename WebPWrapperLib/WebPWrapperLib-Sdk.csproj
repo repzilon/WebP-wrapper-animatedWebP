@@ -1,11 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' == '17.0' ">
+    <TargetFrameworks>net20;net46;netcoreapp2.1;netcoreapp3.1;net5.0-windows;net6.0-windows</TargetFrameworks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(VisualStudioVersion)' != '17.0' ">
+    <TargetFrameworks>net20;net40;net46;netcoreapp2.1</TargetFrameworks>
+  </PropertyGroup>
   <PropertyGroup>
     <ProjectGuid>{935F7370-4266-43D1-B907-1322BDBCD6ED}</ProjectGuid>
     <RootNamespace>WebPWrapperLib</RootNamespace>
     <AssemblyName>WebPWrapperLib</AssemblyName>
-    <TargetFramework>net20</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <OutputPath>bin\$(Configuration)\</OutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugType>full</DebugType>
@@ -38,5 +42,17 @@
     <Content Include="x86\libwebpdemux.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp2.1'">
+    <PackageReference Include="System.Drawing.Common" Version="[4.7.3]" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.1'">
+    <PackageReference Include="System.Drawing.Common" Version="[5.0.3]" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net5.0-windows'">
+    <PackageReference Include="System.Drawing.Common" Version="[5.0.3]" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows'">
+    <PackageReference Include="System.Drawing.Common" Version="8.0.6" />
   </ItemGroup>
 </Project>
