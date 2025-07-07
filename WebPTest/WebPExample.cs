@@ -63,7 +63,10 @@ namespace WebPTest
                             using (WebP webp = new WebP())
                             {
                                 byte[] bytes = File.ReadAllBytes(pathFileName);
-                                webp.GetInfo(bytes, out int width, out int height, out bool hasAlpha, out bool hasAnimation, out string format);
+								int width, height;
+								bool hasAlpha, hasAnimation;
+								string format;
+                                webp.GetInfo(bytes, out  width, out height, out hasAlpha, out hasAnimation, out format);
                                 if (!hasAnimation)
                                 {
                                     pictureBox.Image = webp.Decode(bytes);

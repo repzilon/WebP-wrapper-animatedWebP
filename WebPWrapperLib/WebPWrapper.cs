@@ -78,7 +78,10 @@ namespace WebPWrapper
             try
             {
                 //Get image width and height
-                GetInfo(rawWebP, out int imgWidth, out int imgHeight, out bool hasAlpha, out bool hasAnimation, out string format);
+				int imgWidth, imgHeight;
+				bool hasAlpha, hasAnimation;
+				string format;
+                GetInfo(rawWebP, out imgWidth, out imgHeight, out hasAlpha, out hasAnimation, out format);
 
                 //Create a BitmapData and Lock all pixels to be written
                 if (hasAlpha)
@@ -741,7 +744,8 @@ namespace WebPWrapper
                 throw new ArgumentOutOfRangeException();
 
             WebPDemuxer webPDemuxer = UnsafeNativeMethods.WebPAnimDecoderGetDemuxer(_webPAnimDecoder);
-            bool res = UnsafeNativeMethods.WebPDemuxGetFrame(webPDemuxer, frameNumber, out WebPIterator iter);
+			WebPIterator iter;
+            bool res = UnsafeNativeMethods.WebPDemuxGetFrame(webPDemuxer, frameNumber, out iter);
 
             int size = (int)iter.fragment.size;
             byte[] bytes = new byte[size];
@@ -1476,7 +1480,7 @@ namespace WebPWrapper
     [SuppressUnmanagedCodeSecurity]
     internal sealed partial class UnsafeNativeMethods
     {
-        [MethodImpl(256)]  //MethodImplOptions.AggressiveInlining
+        //[MethodImpl(256)]  //MethodImplOptions.AggressiveInlining
         private static void ValidatePlatform()
         {
             if (IntPtr.Size != 4 && IntPtr.Size != 8)
