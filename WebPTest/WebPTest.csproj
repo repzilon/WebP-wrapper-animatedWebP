@@ -57,13 +57,13 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WebPWrapper\WebPWrapper.csproj">
-      <Project>{daf13bd3-52b9-4fcb-89e9-49dedf5e0f20}</Project>
-      <Name>WebPWrapper</Name>
+    <ProjectReference Include="..\WebPWrapperLib\WebPWrapperLib.csproj">
+      <Project>{935f7370-4266-43d1-b907-1322bdbcd6ed}</Project>
+      <Name>WebPWrapperLib</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

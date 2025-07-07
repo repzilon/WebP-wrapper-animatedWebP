@@ -41,6 +41,9 @@
     <Compile Remove="Properties\Settings.Designer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WebPWrapper\WebPWrapper-Sdk.csproj" />
+    <ProjectReference Include="..\WebPWrapperLib\WebPWrapperLib-Sdk.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net20'">
+    <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 </Project>
