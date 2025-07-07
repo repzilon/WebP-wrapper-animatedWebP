@@ -22,10 +22,6 @@
     <Compile Update="WebPExample.Designer.cs">
       <DependentUpon>WebPExample.cs</DependentUpon>
     </Compile>
-    <EmbeddedResource Update="WebPExample.resx">
-      <DependentUpon>WebPExample.cs</DependentUpon>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Content Include="WildCherry.png">
@@ -39,6 +35,15 @@
     <Compile Remove="WebPWrapper.cs" />
     <Compile Remove="Properties\Resources.Designer.cs" />
     <Compile Remove="Properties\Settings.Designer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Remove="WebPExample.resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="WebPExample.resx">
+      <DependentUpon>WebPExample.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\WebPWrapperLib\WebPWrapperLib-Sdk.csproj" />
