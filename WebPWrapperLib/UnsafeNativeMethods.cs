@@ -179,7 +179,7 @@ namespace WebPWrapper
 		/// <param name="output_stride">Specifies the distance between scan lines</param>
 		internal static void WebPDecodeBGRInto(IntPtr data, int data_size, IntPtr output_buffer, int output_buffer_size, int output_stride)
 		{
-			if (WebPDecodeBGRInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == null)
+			if (WebPDecodeBGRInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == IntPtr.Zero)
 				throw new InvalidOperationException("Can not decode WebP");
 		}
 
@@ -194,7 +194,7 @@ namespace WebPWrapper
 		/// <param name="output_stride">Specifies the distance between scan lines</param>
 		internal static void WebPDecodeBGRAInto(IntPtr data, int data_size, IntPtr output_buffer, int output_buffer_size, int output_stride)
 		{
-			if (WebPDecodeBGRAInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == null)
+			if (WebPDecodeBGRAInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == IntPtr.Zero)
 				throw new InvalidOperationException("Can not decode WebP");
 		}
 
@@ -210,7 +210,7 @@ namespace WebPWrapper
 		/// <param name="output_stride">Specifies the distance between scan lines</param>
 		internal static void WebPDecodeARGBInto(IntPtr data, int data_size, IntPtr output_buffer, int output_buffer_size, int output_stride)
 		{
-			if (WebPDecodeARGBInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == null)
+			if (WebPDecodeARGBInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == IntPtr.Zero)
 				throw new InvalidOperationException("Can not decode WebP");
 		}
 
