@@ -41,13 +41,7 @@ namespace WebPWrapper
 		/// <returns>Bitmap with the WebP image</returns>
 		public Bitmap Load(string pathFileName)
 		{
-			try
-			{
-				byte[] rawWebP = File.ReadAllBytes(pathFileName);
-
-				return Decode(rawWebP);
-			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.Load"); }
+			return Decode(File.ReadAllBytes(pathFileName));
 		}
 
 		/// <summary>Decode a WebP image</summary>
@@ -59,8 +53,7 @@ namespace WebPWrapper
 			BitmapData bmpData = null;
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
-			try
-			{
+			try {
 				//Get image width and height
 				int imgWidth, imgHeight;
 				bool hasAlpha, hasAnimation;
@@ -83,10 +76,7 @@ namespace WebPWrapper
 					UnsafeNativeMethods.WebPDecodeBGRAInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
 
 				return bmp;
-			}
-			catch (Exception) { throw; }
-			finally
-			{
+			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -107,34 +97,28 @@ namespace WebPWrapper
 			Bitmap bmp = null;
 			BitmapData bmpData = null;
 			VP8StatusCode result;
-			try
-			{
+			try {
 				WebPDecoderConfig config = new WebPDecoderConfig();
-				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0)
-				{
+				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0) {
 					throw new Exception("WebPInitDecoderConfig failed. Wrong version?");
 				}
 				// Read the .webp input file information
 				IntPtr ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
 				int height;
 				int width;
-				if (options.use_scaling == 0)
-				{
+				if (options.use_scaling == 0) {
 					result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref config.input);
 					if (result != VP8StatusCode.VP8_STATUS_OK)
 						throw new Exception("Failed WebPGetFeatures with error " + result);
 
 					//Test cropping values
-					if (options.use_cropping == 1)
-					{
+					if (options.use_cropping == 1) {
 						if (options.crop_left + options.crop_width > config.input.Width || options.crop_top + options.crop_height > config.input.Height)
 							throw new Exception("Crop options exceeded WebP image dimensions");
 						width = options.crop_width;
 						height = options.crop_height;
 					}
-				}
-				else
-				{
+				} else {
 					width = options.scaled_width;
 					height = options.scaled_height;
 				}
@@ -155,13 +139,10 @@ namespace WebPWrapper
 				config.options.alpha_dithering_strength = options.alpha_dithering_strength;
 
 				//Create a BitmapData and Lock all pixels to be written
-				if (config.input.Has_alpha == 1)
-				{
+				if (config.input.Has_alpha == 1) {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_bgrA;
 					bmp = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format32bppArgb);
-				}
-				else
-				{
+				} else {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
 					bmp = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format24bppRgb);
 				}
@@ -177,17 +158,13 @@ namespace WebPWrapper
 
 				// Decode
 				result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
-				if (result != VP8StatusCode.VP8_STATUS_OK)
-				{
+				if (result != VP8StatusCode.VP8_STATUS_OK) {
 					throw new Exception("Failed WebPDecode with error " + result);
 				}
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 
 				return bmp;
-			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.Decode"); }
-			finally
-			{
+			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -209,8 +186,7 @@ namespace WebPWrapper
 			Bitmap bmp = null;
 			BitmapData bmpData = null;
 
-			try
-			{
+			try {
 				WebPDecoderConfig config = new WebPDecoderConfig();
 				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0)
 					throw new Exception("WebPInitDecoderConfig failed. Wrong version?");
@@ -245,10 +221,7 @@ namespace WebPWrapper
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 
 				return bmp;
-			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.Thumbnail"); }
-			finally
-			{
+			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -270,8 +243,7 @@ namespace WebPWrapper
 			Bitmap bmp = null;
 			BitmapData bmpData = null;
 
-			try
-			{
+			try {
 				WebPDecoderConfig config = new WebPDecoderConfig();
 				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0)
 					throw new Exception("WebPInitDecoderConfig failed. Wrong version?");
@@ -290,13 +262,10 @@ namespace WebPWrapper
 				config.options.scaled_height = height;
 
 				//Create a BitmapData and Lock all pixels to be written
-				if (config.input.Has_alpha == 1)
-				{
+				if (config.input.Has_alpha == 1) {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_bgrA;
 					bmp = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-				}
-				else
-				{
+				} else {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
 					bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb);
 				}
@@ -318,10 +287,7 @@ namespace WebPWrapper
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 
 				return bmp;
-			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.Thumbnail"); }
-			finally
-			{
+			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -340,17 +306,11 @@ namespace WebPWrapper
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		public void Save(Bitmap bmp, string pathFileName, int quality = 75)
 		{
-			byte[] rawWebP;
+			//Encode in webP format
+			byte[] rawWebP = EncodeLossy(bmp, quality);
 
-			try
-			{
-				//Encode in webP format
-				rawWebP = EncodeLossy(bmp, quality);
-
-				//Write webP file
-				File.WriteAllBytes(pathFileName, rawWebP);
-			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.Save"); }
+			//Write webP file
+			File.WriteAllBytes(pathFileName, rawWebP);
 		}
 
 		/// <summary>Lossy encoding bitmap to WebP (Simple encoding API)</summary>
@@ -370,8 +330,7 @@ namespace WebPWrapper
 			BitmapData bmpData = null;
 			IntPtr unmanagedData = IntPtr.Zero;
 
-			try
-			{
+			try {
 				int size;
 
 				//Get bmp data
@@ -391,9 +350,7 @@ namespace WebPWrapper
 
 				return rawWebP;
 			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.EncodeLossly"); }
-			finally
-			{
+			finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -436,8 +393,7 @@ namespace WebPWrapper
 			{
 				config.preprocessing = 4;
 				config.use_sharp_yuv = 1;
-			}
-			else
+			} else
 				config.preprocessing = 3;
 
 			return AdvancedEncode(bmp, config, info);
@@ -458,8 +414,7 @@ namespace WebPWrapper
 
 			BitmapData bmpData = null;
 			IntPtr unmanagedData = IntPtr.Zero;
-			try
-			{
+			try {
 				//Get bmp data
 				bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, bmp.PixelFormat);
 
@@ -476,9 +431,7 @@ namespace WebPWrapper
 
 				return rawWebP;
 			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.EncodeLossless (Simple)"); }
-			finally
-			{
+			finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -503,13 +456,10 @@ namespace WebPWrapper
 				throw new Exception("Can´t config preset");
 
 			//Old version of DLL does not support info and WebPConfigLosslessPreset
-			if (UnsafeNativeMethods.WebPGetDecoderVersion() > 1082)
-			{
+			if (UnsafeNativeMethods.WebPGetDecoderVersion() > 1082) {
 				if (UnsafeNativeMethods.WebPConfigLosslessPreset(ref config, speed) == 0)
 					throw new Exception("Can´t configure lossless preset");
-			}
-			else
-			{
+			} else {
 				config.lossless = 1;
 				config.method = speed;
 				if (config.method > 6)
@@ -575,13 +525,9 @@ namespace WebPWrapper
 		/// <returns>Bitmaps of the Animated WebP frames</returns>
 		public IEnumerable<FrameData> AnimLoad(string pathFileName)
 		{
-			try
-			{
-				byte[] rawWebP = File.ReadAllBytes(pathFileName);
+			byte[] rawWebP = File.ReadAllBytes(pathFileName);
 
-				return AnimDecode(rawWebP);
-			}
-			catch (Exception) { throw; }
+			return AnimDecode(rawWebP);
 		}
 
 		/// <summary>Decode an Animated WebP image</summary>
@@ -595,8 +541,7 @@ namespace WebPWrapper
 
 			Bitmap bitmap = null;
 			BitmapData bmpData = null;
-			try
-			{
+			try {
 				WebPAnimDecoderOptions dec_options = new WebPAnimDecoderOptions();
 				var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref dec_options);
 				dec_options.color_mode = WEBP_CSP_MODE.MODE_BGRA;
@@ -614,14 +559,12 @@ namespace WebPWrapper
 				List<FrameData> frames = new List<FrameData>();
 				int oldTimestamp = 0;
 				int idx = 0;
-				while (UnsafeNativeMethods.WebPAnimDecoderHasMoreFrames(dec.decoder))
-				{
+				while (UnsafeNativeMethods.WebPAnimDecoderHasMoreFrames(dec.decoder)) {
 					IntPtr buf = IntPtr.Zero;
 					int timestamp = 0;
 					var result2 = UnsafeNativeMethods.WebPAnimDecoderGetNext(dec.decoder, ref buf, ref timestamp);
 
-					if (startFrameIdx == -1 || startFrameIdx <= idx)
-					{
+					if (startFrameIdx == -1 || startFrameIdx <= idx) {
 
 						bitmap = new Bitmap((int)anim_info.canvas_width, (int)anim_info.canvas_height, PixelFormat.Format32bppArgb);
 						bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
@@ -637,8 +580,7 @@ namespace WebPWrapper
 					oldTimestamp = timestamp;
 					++idx;
 
-					if (endFrameIdx != -1 && idx >= endFrameIdx)
-					{
+					if (endFrameIdx != -1 && idx >= endFrameIdx) {
 						break;
 					}
 				}
@@ -646,10 +588,7 @@ namespace WebPWrapper
 				UnsafeNativeMethods.WebPAnimDecoderDelete(dec.decoder);
 
 				return frames;
-			}
-			catch (Exception) { throw; }
-			finally
-			{
+			} finally {
 				if (bmpData != null)
 					bitmap.UnlockBits(bmpData);
 
@@ -677,12 +616,9 @@ namespace WebPWrapper
 		/// <returns>true on success</returns>
 		public bool AnimInit(string pathFileName, out uint frameCount)
 		{
-			try { 
-				byte[] rawWebP = File.ReadAllBytes(pathFileName);
+			byte[] rawWebP = File.ReadAllBytes(pathFileName);
 
-				return AnimInit(rawWebP, out frameCount);
-			}
-			catch (Exception) { throw; }
+			return AnimInit(rawWebP, out frameCount);
 		}
 
 		/// <summary>Initialize the library for handling the given WebP file.</summary>
@@ -695,25 +631,21 @@ namespace WebPWrapper
 
 			_pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
-			try
+			WebPAnimDecoderOptions dec_options = new WebPAnimDecoderOptions();
+			var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref dec_options);
+			dec_options.color_mode = WEBP_CSP_MODE.MODE_BGRA;
+			WebPData webp_data = new WebPData
 			{
-				WebPAnimDecoderOptions dec_options = new WebPAnimDecoderOptions();
-				var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref dec_options);
-				dec_options.color_mode = WEBP_CSP_MODE.MODE_BGRA;
-				WebPData webp_data = new WebPData
-				{
-					data = _pinnedWebP.AddrOfPinnedObject(),
-					size = new UIntPtr((uint)rawWebP.Length)
-				};
-				_webPAnimDecoder = UnsafeNativeMethods.WebPAnimDecoderNew(ref webp_data, ref dec_options);
+				data = _pinnedWebP.AddrOfPinnedObject(),
+				size = new UIntPtr((uint)rawWebP.Length)
+			};
+			_webPAnimDecoder = UnsafeNativeMethods.WebPAnimDecoderNew(ref webp_data, ref dec_options);
 
-				WebPAnimInfo anim_info;
-				UnsafeNativeMethods.WebPAnimDecoderGetInfo(_webPAnimDecoder.decoder, out anim_info);
-				_frameCount = frameCount = anim_info.frame_count;
+			WebPAnimInfo anim_info;
+			UnsafeNativeMethods.WebPAnimDecoderGetInfo(_webPAnimDecoder.decoder, out anim_info);
+			_frameCount = frameCount = anim_info.frame_count;
 
-				return true;
-			}
-			catch (Exception) { throw; }
+			return true;
 		}
 
 		/// <summary>Gets the raw frame data.</summary>
@@ -736,7 +668,7 @@ namespace WebPWrapper
 			Marshal.Copy(iter.fragment.data, bytes, 0, size);
 
 			FrameDataRaw fd = new FrameDataRaw() { Data = bytes, Duration = iter.duration };
-            
+
 			UnsafeNativeMethods.WebPDemuxReleaseIterator(iter);
 
 			return fd;
@@ -749,15 +681,11 @@ namespace WebPWrapper
 		/// <returns>Version of library</returns>
 		public string GetVersion()
 		{
-			try
-			{
-				uint v = (uint)UnsafeNativeMethods.WebPGetDecoderVersion();
-				var revision = v % 256;
-				var minor = (v >> 8) % 256;
-				var major = (v >> 16) % 256;
-				return major + "." + minor + "." + revision;
-			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.GetVersion"); }
+			uint v = (uint)UnsafeNativeMethods.WebPGetDecoderVersion();
+			var revision = v % 256;
+			var minor = (v >> 8) % 256;
+			var major = (v >> 16) % 256;
+			return major + "." + minor + "." + revision;
 		}
 
 		/// <summary>Get info of WEBP data</summary>
@@ -772,8 +700,7 @@ namespace WebPWrapper
 			VP8StatusCode result;
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
-			try
-			{
+			try {
 				IntPtr ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
 
 				WebPBitstreamFeatures features = new WebPBitstreamFeatures();
@@ -786,8 +713,7 @@ namespace WebPWrapper
 				height = features.Height;
 				if (features.Has_alpha == 1) has_alpha = true; else has_alpha = false;
 				if (features.Has_animation == 1) has_animation = true; else has_animation = false;
-				switch (features.Format)
-				{
+				switch (features.Format) {
 					case 1:
 						format = "lossy";
 						break;
@@ -799,9 +725,7 @@ namespace WebPWrapper
 						break;
 				}
 			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.GetInfo"); }
-			finally
-			{
+			finally {
 				//Free memory
 				if (pinnedWebP.IsAllocated)
 					pinnedWebP.Free();
@@ -822,8 +746,7 @@ namespace WebPWrapper
 			float[] result = new float[5];
 			GCHandle pinnedResult = GCHandle.Alloc(result, GCHandleType.Pinned);
 
-			try
-			{
+			try {
 				if (source == null)
 					throw new Exception("Source picture is void");
 				if (reference == null)
@@ -842,14 +765,11 @@ namespace WebPWrapper
 				wpicSource.height = (int)source.Height;
 
 				//Put the source bitmap componets in wpic
-				if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb)
-				{
+				if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb) {
 					wpicSource.use_argb = 1;
 					if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
 						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-				}
-				else
-				{
+				} else {
 					wpicSource.use_argb = 0;
 					if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
 						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
@@ -865,14 +785,11 @@ namespace WebPWrapper
 				wpicReference.use_argb = 1;
 
 				//Put the source bitmap contents in WebPPicture instance
-				if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb)
-				{
+				if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb) {
 					wpicSource.use_argb = 1;
 					if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpicReference, referenceBmpData.Scan0, referenceBmpData.Stride) != 1)
 						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-				}
-				else
-				{
+				} else {
 					wpicSource.use_argb = 0;
 					if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpicReference, referenceBmpData.Scan0, referenceBmpData.Stride) != 1)
 						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
@@ -884,9 +801,7 @@ namespace WebPWrapper
 					throw new Exception("Can´t measure.");
 				return result;
 			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.GetPictureDistortion"); }
-			finally
-			{
+			finally {
 				//Unlock the pixels
 				if (sourceBmpData != null)
 					source.UnlockBits(sourceBmpData);
@@ -921,8 +836,7 @@ namespace WebPWrapper
 			IntPtr ptrStats = IntPtr.Zero;
 			GCHandle pinnedArrayHandle = new GCHandle();
 			int dataWebpSize;
-			try
-			{
+			try {
 				//Validate the configuration
 				if (UnsafeNativeMethods.WebPValidateConfig(ref config) != 1)
 					throw new Exception("Bad configuration parameters");
@@ -943,8 +857,7 @@ namespace WebPWrapper
 				wpic.height = (int)bmp.Height;
 				wpic.use_argb = 1;
 
-				if (bmp.PixelFormat == PixelFormat.Format32bppArgb)
-				{
+				if (bmp.PixelFormat == PixelFormat.Format32bppArgb) {
 					//Put the bitmap componets in wpic
 					int result = UnsafeNativeMethods.WebPPictureImportBGRA(ref wpic, bmpData.Scan0, bmpData.Stride);
 					if (result != 1)
@@ -952,9 +865,7 @@ namespace WebPWrapper
 					wpic.colorspace = (uint)WEBP_CSP_MODE.MODE_bgrA;
 					dataWebpSize = bmp.Width * bmp.Height * 32;
 					dataWebp = new byte[bmp.Width * bmp.Height * 32];                //Memory for WebP output
-				}
-				else
-				{
+				} else {
 					//Put the bitmap contents in WebPPicture instance
 					int result = UnsafeNativeMethods.WebPPictureImportBGR(ref wpic, bmpData.Scan0, bmpData.Stride);
 					if (result != 1)
@@ -964,8 +875,7 @@ namespace WebPWrapper
 				}
 
 				//Set up statistics of compression
-				if (info)
-				{
+				if (info) {
 					stats = new WebPAuxStats();
 					ptrStats = Marshal.AllocHGlobal(Marshal.SizeOf(stats));
 					Marshal.StructureToPtr(stats, ptrStats, false);
@@ -1005,61 +915,53 @@ namespace WebPWrapper
 				dataWebp = null;
 
 				//Show statistics
-				if (info)
-				{
+				if (info) {
 					stats = (WebPAuxStats)Marshal.PtrToStructure(ptrStats, typeof(WebPAuxStats));
 					//MessageBox.Show(
 					Debug.Print("Dimension: " + wpic.width + " x " + wpic.height + " pixels\n" +
-					            "Output:    " + stats.coded_size + " bytes\n" +
-					            "PSNR Y:    " + stats.PSNRY + " db\n" +
-					            "PSNR u:    " + stats.PSNRU + " db\n" +
-					            "PSNR v:    " + stats.PSNRV + " db\n" +
-					            "PSNR ALL:  " + stats.PSNRALL + " db\n" +
-					            "Block intra4:  " + stats.block_count_intra4 + "\n" +
-					            "Block intra16: " + stats.block_count_intra16 + "\n" +
-					            "Block skipped: " + stats.block_count_skipped + "\n" +
-					            "Header size:    " + stats.header_bytes + " bytes\n" +
-					            "Mode-partition: " + stats.mode_partition_0 + " bytes\n" +
-					            "Macro-blocks 0: " + stats.segment_size_segments0 + " residuals bytes\n" +
-					            "Macro-blocks 1: " + stats.segment_size_segments1 + " residuals bytes\n" +
-					            "Macro-blocks 2: " + stats.segment_size_segments2 + " residuals bytes\n" +
-					            "Macro-blocks 3: " + stats.segment_size_segments3 + " residuals bytes\n" +
-					            "Quantizer    0: " + stats.segment_quant_segments0 + " residuals bytes\n" +
-					            "Quantizer    1: " + stats.segment_quant_segments1 + " residuals bytes\n" +
-					            "Quantizer    2: " + stats.segment_quant_segments2 + " residuals bytes\n" +
-					            "Quantizer    3: " + stats.segment_quant_segments3 + " residuals bytes\n" +
-					            "Filter level 0: " + stats.segment_level_segments0 + " residuals bytes\n" +
-					            "Filter level 1: " + stats.segment_level_segments1 + " residuals bytes\n" +
-					            "Filter level 2: " + stats.segment_level_segments2 + " residuals bytes\n" +
-					            "Filter level 3: " + stats.segment_level_segments3 + " residuals bytes\n", "Compression statistics");
+								"Output:    " + stats.coded_size + " bytes\n" +
+								"PSNR Y:    " + stats.PSNRY + " db\n" +
+								"PSNR u:    " + stats.PSNRU + " db\n" +
+								"PSNR v:    " + stats.PSNRV + " db\n" +
+								"PSNR ALL:  " + stats.PSNRALL + " db\n" +
+								"Block intra4:  " + stats.block_count_intra4 + "\n" +
+								"Block intra16: " + stats.block_count_intra16 + "\n" +
+								"Block skipped: " + stats.block_count_skipped + "\n" +
+								"Header size:    " + stats.header_bytes + " bytes\n" +
+								"Mode-partition: " + stats.mode_partition_0 + " bytes\n" +
+								"Macro-blocks 0: " + stats.segment_size_segments0 + " residuals bytes\n" +
+								"Macro-blocks 1: " + stats.segment_size_segments1 + " residuals bytes\n" +
+								"Macro-blocks 2: " + stats.segment_size_segments2 + " residuals bytes\n" +
+								"Macro-blocks 3: " + stats.segment_size_segments3 + " residuals bytes\n" +
+								"Quantizer    0: " + stats.segment_quant_segments0 + " residuals bytes\n" +
+								"Quantizer    1: " + stats.segment_quant_segments1 + " residuals bytes\n" +
+								"Quantizer    2: " + stats.segment_quant_segments2 + " residuals bytes\n" +
+								"Quantizer    3: " + stats.segment_quant_segments3 + " residuals bytes\n" +
+								"Filter level 0: " + stats.segment_level_segments0 + " residuals bytes\n" +
+								"Filter level 1: " + stats.segment_level_segments1 + " residuals bytes\n" +
+								"Filter level 2: " + stats.segment_level_segments2 + " residuals bytes\n" +
+								"Filter level 3: " + stats.segment_level_segments3 + " residuals bytes\n", "Compression statistics");
 				}
 
 				return rawWebP;
-			}
-			catch (Exception ex) { throw new Exception(ex.Message + "\r\nIn WebP.AdvancedEncode"); }
-			finally
-			{
+			} finally {
 				//Free temporal compress memory
-				if (pinnedArrayHandle.IsAllocated)
-				{
+				if (pinnedArrayHandle.IsAllocated) {
 					pinnedArrayHandle.Free();
 				}
 
 				//Free statistics memory
-				if (ptrStats != IntPtr.Zero)
-				{
+				if (ptrStats != IntPtr.Zero) {
 					Marshal.FreeHGlobal(ptrStats);
 				}
 
 				//Unlock the pixels
-				if (bmpData != null)
-				{
+				if (bmpData != null) {
 					bmp.UnlockBits(bmpData);
 				}
 
 				//Free memory
-				if (wpic.argb != IntPtr.Zero)
-				{
+				if (wpic.argb != IntPtr.Zero) {
 					UnsafeNativeMethods.WebPPictureFree(ref wpic);
 				}
 			}
@@ -1082,8 +984,7 @@ namespace WebPWrapper
 
 		private void DisposeOldDecoder()
 		{
-			if (_webPAnimDecoder.decoder != IntPtr.Zero)
-			{
+			if (_webPAnimDecoder.decoder != IntPtr.Zero) {
 				UnsafeNativeMethods.WebPAnimDecoderDelete(_webPAnimDecoder.decoder);
 				_webPAnimDecoder.decoder = IntPtr.Zero;
 				if (_pinnedWebP.IsAllocated)
@@ -1096,8 +997,7 @@ namespace WebPWrapper
 			if (_disposed)
 				return;
 
-			if (disposing)
-			{
+			if (disposing) {
 				// TODO: dispose managed state (managed objects).
 			}
 
