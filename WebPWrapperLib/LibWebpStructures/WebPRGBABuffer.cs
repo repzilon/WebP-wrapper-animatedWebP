@@ -9,8 +9,10 @@ namespace WebPWrapper
 	{
 		/// <summary>Pointer to RGBA samples</summary>
 		public IntPtr rgba;
+
 		/// <summary>Stride in bytes from one scanline to the next</summary>
 		public int stride;
+
 		/// <summary>Total size of the RGBA buffer</summary>
 		public UIntPtr size;
 	}
