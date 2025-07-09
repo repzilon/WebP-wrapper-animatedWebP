@@ -514,6 +514,7 @@ namespace WebPWrapper
 		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxDelete")]
 		internal static extern void WebPMuxDelete(IntPtr mux);
 
+		// TODO: this was custom patch in libwebp but not necessary if Marshal.FreeHGlobal works too
 		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDataClearExternal")]
 		internal static extern void WebPDataClear(ref WebPData mux);
 		#endregion

@@ -5,6 +5,9 @@ namespace WebPWrapper
 {
 	/// <summary>Main exchange structure (input samples, output bytes, statistics)</summary>
 	[StructLayout(LayoutKind.Sequential)]
+#if UNSAFE
+	unsafe
+#endif
 	internal struct WebPPicture
 	{
 		/// <summary>Main flag for encoder selecting between ARGB or YUV input. Recommended to use ARGB input (*argb, argb_stride) for lossless, and YUV input (*y, *u, *v, etc.) for lossy</summary>
@@ -58,7 +61,11 @@ namespace WebPWrapper
 		public IntPtr writer;
 
 		/// <summary>Can be used by the writer</summary>
+#if UNSAFE
+		public byte* custom_ptr;
+#else
 		public IntPtr custom_ptr;
+#endif
 
 		// map for extra information (only for lossy compression mode)
 		/// <summary>1: intra type, 2: segment, 3: quant, 4: intra-16 prediction mode, 5: chroma prediction mode, 6: bit cost, 7: distortion</summary>
