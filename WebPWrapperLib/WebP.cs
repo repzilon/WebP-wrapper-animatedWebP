@@ -1,21 +1,21 @@
 ﻿////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Wrapper for WebP format in C#. (MIT) Jose M. Piñeiro and others
-//////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Decode Functions:
 // Bitmap Load(string pathFileName) - Load a WebP file in bitmap.
 // Bitmap Decode(byte[] rawWebP) - Decode WebP data (rawWebP) to bitmap.
 // Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options) - Decode WebP data (rawWebP) to bitmap using 'options'.
 // Bitmap GetThumbnailFast(byte[] rawWebP, int width, int height) - Get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Fast mode.
 // Bitmap GetThumbnailQuality(byte[] rawWebP, int width, int height) - Fast get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Quality mode.
-// 
+//
 // Encode Functions:
 // Save(Bitmap bmp, string pathFileName, int quality) - Save bitmap with quality lost to WebP file. Optionally select 'quality'.
 // byte[] EncodeLossy(Bitmap bmp, int quality) - Encode bitmap with quality lost to WebP byte array. Optionally select 'quality'.
 // byte[] EncodeLossy(Bitmap bmp, int quality, int speed, bool info) - Encode bitmap with quality lost to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
-// byte[] EncodeLossless(Bitmap bmp) - Encode bitmap without quality lost to WebP byte array. 
-// byte[] EncodeLossless(Bitmap bmp, int speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'. 
+// byte[] EncodeLossless(Bitmap bmp) - Encode bitmap without quality lost to WebP byte array.
+// byte[] EncodeLossless(Bitmap bmp, int speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'.
 // byte[] EncodeNearLossless(Bitmap bmp, int quality, int speed = 9, bool info = false) - Encode bitmap with a near lossless method to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
-// 
+//
 // Another functions:
 // string GetVersion() - Get the library version
 // GetInfo(byte[] rawWebP, out int width, out int height, out bool has_alpha, out bool has_animation, out string format) - Get information of WEBP data
@@ -28,7 +28,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace WebPWrapper
 {
@@ -503,7 +502,7 @@ namespace WebPWrapper
 			return AdvancedEncode(bmp, config, false);
 		}
 
-		public void EncodeWithMeta(Bitmap bmp, string path, byte[] rawXmp, 
+		public void EncodeWithMeta(Bitmap bmp, string path, byte[] rawXmp,
 		int quality = 85, int speed = 4, bool multithread = false, int alphaQuality = 100)
 		{
 			IntPtr mux = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
@@ -513,7 +512,7 @@ namespace WebPWrapper
 			config.method = Math.Max(Math.Min(speed, 6), 0); // 0 is fastest
 			config.thread_level = multithread ? 1 : 0;
 			config.alpha_quality = alphaQuality;
-			
+
 			var rawWebP = AdvancedEncode(bmp, config, false);
 			WebPMuxError err;
 
@@ -526,7 +525,7 @@ namespace WebPWrapper
 				data = webpPtr
 			};
 			err = UnsafeNativeMethods.WebPMuxSetImage(mux, ref webpData, 0);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception($"Error: {err}");
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception("Error: " + err);
 
 			var pinnedRawMeta = GCHandle.Alloc(rawXmp, GCHandleType.Pinned);
 			IntPtr metaPtr = pinnedRawMeta.AddrOfPinnedObject();
@@ -536,11 +535,11 @@ namespace WebPWrapper
 				data = metaPtr
 			};
 			err = UnsafeNativeMethods.WebPMuxSetChunk(mux, "XMP ", ref metaWebData, 0);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception($"Error: {err}");
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception("Error: " + err);
 
 			var outputData = new WebPData();
 			err = UnsafeNativeMethods.WebPMuxAssemble(mux, ref outputData);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception($"Error: {err}");
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception("Error: " + err);
 
 			int size = Convert.ToInt32(outputData.size);
 			var rawOutput = new byte[size];
@@ -1111,7 +1110,7 @@ namespace WebPWrapper
 		}
 #endregion
 
-#region | Destruction |
+		#region | Destruction |
 		/// <summary>Free memory</summary>
 		public void Dispose()
 		{
