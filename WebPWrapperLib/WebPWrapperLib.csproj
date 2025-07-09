@@ -33,8 +33,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Enumerations.cs" />
+    <Compile Include="LibWebpStructures\RGBA_YUVA_Buffer.cs" />
+    <Compile Include="LibWebpStructures\WebPAnimDecoder.cs" />
+    <Compile Include="LibWebpStructures\WebPAnimDecoderOptions.cs" />
+    <Compile Include="LibWebpStructures\WebPAnimInfo.cs" />
+    <Compile Include="LibWebpStructures\WebPAuxStats.cs" />
+    <Compile Include="LibWebpStructures\WebPBitstreamFeatures.cs" />
+    <Compile Include="LibWebpStructures\WebPConfig.cs" />
+    <Compile Include="LibWebpStructures\WebPData.cs" />
+    <Compile Include="LibWebpStructures\WebPDecBuffer.cs" />
+    <Compile Include="LibWebpStructures\WebPDecoderConfig.cs" />
+    <Compile Include="LibWebpStructures\WebPDecoderOptions.cs" />
+    <Compile Include="LibWebpStructures\WebPDemuxer.cs" />
+    <Compile Include="LibWebpStructures\WebPIterator.cs" />
+    <Compile Include="LibWebpStructures\WebPPicture.cs" />
+    <Compile Include="LibWebpStructures\WebPRGBABuffer.cs" />
+    <Compile Include="LibWebpStructures\WebPYUVABuffer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="WebPWrapper.cs" />
+    <Compile Include="UnsafeNativeMethods.cs" />
+    <Compile Include="WebP.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="x64\libsharpyuv.dll">
