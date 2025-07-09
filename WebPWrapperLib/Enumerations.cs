@@ -165,13 +165,22 @@
 	/// </summary>
 	internal enum DecState
 	{
-		STATE_WEBP_HEADER,  // All the data before that of the VP8/VP8L chunk.
-		STATE_VP8_HEADER,   // The VP8 Frame header (within the VP8 chunk).
+		/// <summary>All the data before that of the VP8/VP8L chunk.</summary>
+		STATE_WEBP_HEADER,
+
+		/// <summary>The VP8 Frame header (within the VP8 chunk).</summary>
+		STATE_VP8_HEADER,
+
 		STATE_VP8_PARTS0,
+
 		STATE_VP8_DATA,
+
 		STATE_VP8L_HEADER,
+
 		STATE_VP8L_DATA,
+
 		STATE_DONE,
+
 		STATE_ERROR
 	}
 
@@ -180,11 +189,17 @@
 	/// </summary>
 	internal enum WebPDemuxState
 	{
-		WEBP_DEMUX_PARSE_ERROR = -1,    // An error occurred while parsing.
-		WEBP_DEMUX_PARSING_HEADER = 0,  // Not enough data to parse full header.
-		WEBP_DEMUX_PARSED_HEADER = 1,   // Header parsing complete,
-										// data may be available.
-		WEBP_DEMUX_DONE = 2             // Entire file has been parsed.
+		/// <summary>An error occurred while parsing.</summary>
+		WEBP_DEMUX_PARSE_ERROR = -1,
+
+		/// <summary>Not enough data to parse full header.</summary>
+		WEBP_DEMUX_PARSING_HEADER = 0,
+
+		/// <summary>Header parsing complete, data may be available.</summary>
+		WEBP_DEMUX_PARSED_HEADER = 1,
+
+		/// <summary>Entire file has been parsed.</summary>
+		WEBP_DEMUX_DONE = 2
 	}
 
 	/// <summary>
@@ -193,8 +208,11 @@
 	/// </summary>
 	public enum WebPMuxAnimBlend
 	{
-		WEBP_MUX_BLEND,              // Blend.
-		WEBP_MUX_NO_BLEND            // Do not blend.
+		/// <summary>Blend.</summary>
+		WEBP_MUX_BLEND,
+
+		/// <summary>Do not blend.</summary>
+		WEBP_MUX_NO_BLEND
 	}
 
 	/// <summary>
@@ -203,8 +221,11 @@
 	/// </summary>
 	public enum WebPMuxAnimDispose
 	{
-		WEBP_MUX_DISPOSE_NONE,       // Do not dispose.
-		WEBP_MUX_DISPOSE_BACKGROUND  // Dispose to background color.
+		/// <summary>Do not dispose.</summary>
+		WEBP_MUX_DISPOSE_NONE,
+
+		/// <summary>Dispose to background color.</summary>
+		WEBP_MUX_DISPOSE_BACKGROUND
 	}
 	#endregion
 }

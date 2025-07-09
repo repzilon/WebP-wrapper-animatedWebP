@@ -349,8 +349,7 @@ namespace WebPWrapper
 				Marshal.Copy(unmanagedData, rawWebP, 0, size);
 
 				return rawWebP;
-			}
-			finally {
+			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -430,8 +429,7 @@ namespace WebPWrapper
 				Marshal.Copy(unmanagedData, rawWebP, 0, size);
 
 				return rawWebP;
-			}
-			finally {
+			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
 					bmp.UnlockBits(bmpData);
@@ -724,8 +722,7 @@ namespace WebPWrapper
 						format = "undefined";
 						break;
 				}
-			}
-			finally {
+			} finally {
 				//Free memory
 				if (pinnedWebP.IsAllocated)
 					pinnedWebP.Free();
@@ -800,8 +797,7 @@ namespace WebPWrapper
 				if (UnsafeNativeMethods.WebPPictureDistortion(ref wpicSource, ref wpicReference, metric_type, ptrResult) != 1)
 					throw new Exception("Can´t measure.");
 				return result;
-			}
-			finally {
+			} finally {
 				//Unlock the pixels
 				if (sourceBmpData != null)
 					source.UnlockBits(sourceBmpData);
