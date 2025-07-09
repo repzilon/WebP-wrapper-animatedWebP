@@ -503,14 +503,18 @@ namespace WebPWrapper
 			return AdvancedEncode(bmp, config, false);
 		}
 
-		public void EncodeWithMeta(Bitmap bmp, string path, byte[] rawXmp, int quality = 85)
+		public void EncodeWithMeta(Bitmap bmp, string path, byte[] rawXmp, 
+		int quality = 85, int speed = 4, bool multithread = false, int alphaQuality = 100)
 		{
 			var stopwatch = Stopwatch.StartNew();
 			IntPtr mux = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
 			var config = new WebPConfig();
-			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_ICON, quality) == 0)
+			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, quality) == 0)
 				throw new Exception("Can´t configure preset");
-			config.method = 0;
+			config.method = Math.Max(Math.Min(speed, 6), 0); // 0 is fastest
+			config.thread_level = multithread ? 1 : 0;
+			config.alpha_quality = alphaQuality;
+			
 			Console.WriteLine($"bench #0: {stopwatch.ElapsedMilliseconds}ms");
 			var rawWebP = AdvancedEncode(bmp, config, false);
 			Console.WriteLine($"bench #1 after AdvancedEncode: {stopwatch.ElapsedMilliseconds}ms");
