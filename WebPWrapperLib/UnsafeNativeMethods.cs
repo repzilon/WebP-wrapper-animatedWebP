@@ -498,6 +498,24 @@ namespace WebPWrapper
 		}
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDemuxReleaseIterator")]
 		private static extern int WebPDemuxReleaseIteratorInternal(WebPIterator iter);
+
+		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPNewInternal")]
+		internal static extern IntPtr WebPNewInternal(int version);
+
+		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxSetImage")]
+		internal static extern WebPMuxError WebPMuxSetImage(IntPtr mux, ref WebPData bitstream, int copy_data);
+
+		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxSetChunk")]
+		internal static extern WebPMuxError WebPMuxSetChunk(IntPtr mux, string fourcc, ref WebPData chunk_data, int copy_data);
+
+		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxAssemble")]
+		internal static extern WebPMuxError WebPMuxAssemble(IntPtr mux, ref WebPData output_data);
+
+		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxDelete")]
+		internal static extern void WebPMuxDelete(IntPtr mux);
+
+		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDataClearExternal")]
+		internal static extern void WebPDataClear(ref WebPData mux);
 		#endregion
 	}
 }

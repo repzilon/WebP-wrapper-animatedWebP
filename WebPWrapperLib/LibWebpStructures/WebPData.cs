@@ -12,6 +12,6 @@ namespace WebPWrapper
 	public struct WebPData
 	{
 		public IntPtr data;
-		public UIntPtr size;
+		public UInt64 size;
 	}
 }

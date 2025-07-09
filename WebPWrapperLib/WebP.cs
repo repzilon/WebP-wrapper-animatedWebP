@@ -28,6 +28,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace WebPWrapper
 {
@@ -484,7 +485,7 @@ namespace WebPWrapper
 			if (UnsafeNativeMethods.WebPGetDecoderVersion() <= 1082)
 				throw new Exception("This DLL version not support EncodeNearLossless");
 
-			//Inicialize config struct
+			//Initialize config struct
 			WebPConfig config = new WebPConfig();
 
 			//Set compression parameters
@@ -500,6 +501,59 @@ namespace WebPWrapper
 			config.exact = 0;
 
 			return AdvancedEncode(bmp, config, false);
+		}
+
+		public void EncodeWithMeta(Bitmap bmp, string path)
+		{
+			IntPtr mux = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
+			var config = new WebPConfig();
+			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, 85) == 0)
+				throw new Exception("Can´t configure preset");
+
+			var rawWebP = AdvancedEncode(bmp, config, false);
+			WebPMuxError err;
+
+			// TODO: directly use Ptr from AdvancedEncode instead of managed<>unmanaged back and forth
+			var pinnedRawWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
+			IntPtr webpPtr = pinnedRawWebP.AddrOfPinnedObject();
+			var webpData = new WebPData()
+			{
+				size = Convert.ToUInt64(rawWebP.Length),
+				data = webpPtr
+			};
+			Console.WriteLine($"WebPMuxSetImage {mux} , {webpData.size} {webpData.data}");
+			err = UnsafeNativeMethods.WebPMuxSetImage(mux, ref webpData, 0);
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception($"Error: {err}");
+
+			// TODO: use real EXIF format
+			var rawMeta = Encoding.ASCII.GetBytes("This is some metadata");
+			var pinnedRawMeta = GCHandle.Alloc(rawMeta, GCHandleType.Pinned);
+			IntPtr metaPtr = pinnedRawMeta.AddrOfPinnedObject();
+			var metaWebData = new WebPData()
+			{
+				size = Convert.ToUInt64(rawMeta.Length),
+				data = metaPtr
+			};
+			Console.WriteLine($"WebPMuxSetChunk {mux} , {metaWebData.size} {metaWebData.data}");
+			err = UnsafeNativeMethods.WebPMuxSetChunk(mux, "EXIF", ref metaWebData, 0);
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception($"Error: {err}");
+
+			var outputData = new WebPData();
+			Console.WriteLine($"WebPMuxAssemble {mux} , {outputData}");
+			err = UnsafeNativeMethods.WebPMuxAssemble(mux, ref outputData);
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception($"Error: {err}");
+
+			int size = Convert.ToInt32(outputData.size);
+			var rawOutput = new byte[size];
+			Marshal.Copy(outputData.data, rawOutput, 0, size);
+			File.WriteAllBytes(path, rawOutput);
+
+			UnsafeNativeMethods.WebPMuxDelete(mux);
+			//UnsafeNativeMethods.WebPDataClear(ref outputData);
+			Marshal.FreeHGlobal(outputData.data);
+
+			pinnedRawWebP.Free();
+			pinnedRawMeta.Free();
 		}
 		#endregion
 
@@ -546,7 +600,7 @@ namespace WebPWrapper
 				WebPData webp_data = new WebPData
 				{
 					data = pinnedWebP.AddrOfPinnedObject(),
-					size = new UIntPtr((uint)rawWebP.Length)
+					size = (ulong)rawWebP.Length
 				};
 				WebPAnimDecoder dec = UnsafeNativeMethods.WebPAnimDecoderNew(ref webp_data, ref dec_options);
 				WebPAnimInfo anim_info = new WebPAnimInfo();
@@ -635,7 +689,7 @@ namespace WebPWrapper
 			WebPData webp_data = new WebPData
 			{
 				data = _pinnedWebP.AddrOfPinnedObject(),
-				size = new UIntPtr((uint)rawWebP.Length)
+				size = (ulong)rawWebP.Length
 			};
 			_webPAnimDecoder = UnsafeNativeMethods.WebPAnimDecoderNew(ref webp_data, ref dec_options);
 
@@ -965,7 +1019,12 @@ namespace WebPWrapper
 
 		private int MyWriter([In] IntPtr data, UIntPtr data_size, ref WebPPicture picture)
 		{
-			UnsafeNativeMethods.CopyMemory(picture.custom_ptr, data, (uint)data_size);
+			//UnsafeNativeMethods.CopyMemory(picture.custom_ptr, data, (uint)data_size);
+			var size = (int)data_size;
+			var buffer = new byte[size];
+			Marshal.Copy(data, buffer, 0, size);
+			Marshal.Copy(buffer, 0, picture.custom_ptr, size);
+
 			//picture.custom_ptr = IntPtr.Add(picture.custom_ptr, (int)data_size);   //Only in .NET > 4.0
 			picture.custom_ptr = new IntPtr(picture.custom_ptr.ToInt64() + (int)data_size);
 			return 1;
