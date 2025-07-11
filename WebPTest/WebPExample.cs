@@ -52,11 +52,8 @@ namespace WebPTest
 						if (Path.GetExtension(pathFileName) == ".webp") {
 							using (WebP webp = new WebP()) {
 								byte[] bytes = File.ReadAllBytes(pathFileName);
-								int width, height;
-								bool hasAlpha, hasAnimation;
-								string format;
-								webp.GetInfo(bytes, out width, out height, out hasAlpha, out hasAnimation, out format);
-								if (!hasAnimation) {
+								var info = webp.GetInfo(bytes);
+								if (!info.IsAnimated) {
 									pictureBox.Image = webp.Decode(bytes);
 								} else {
 									//var list = new System.Collections.Generic.List<WebP.FrameData>(webp.AnimDecode(bytes));
@@ -245,29 +242,27 @@ namespace WebPTest
 		/// </summary>
 		private void ButtonInfo_Click(object sender, EventArgs e)
 		{
-			int width, height;
-			bool has_alpha, has_animation;
-			string format;
-
+			var nl = Environment.NewLine;
 			try {
 				using (OpenFileDialog openFileDialog = new OpenFileDialog()) {
 					openFileDialog.Filter = "WebP images (*.webp)|*.webp";
 					openFileDialog.FileName = "";
 					if (openFileDialog.ShowDialog() == DialogResult.OK) {
-						string pathFileName = openFileDialog.FileName;
+						WebPInfo info;
+						using (WebP webp = new WebP()) {
+							info = webp.GetInfo(File.ReadAllBytes(openFileDialog.FileName));
+						}
 
-						byte[] rawWebp = File.ReadAllBytes(pathFileName);
-						using (WebP webp = new WebP())
-							webp.GetInfo(rawWebp, out width, out height, out has_alpha, out has_animation, out format);
-						MessageBox.Show("Width: " + width + "\n" +
-										"Height: " + height + "\n" +
-										"Has alpha: " + has_alpha + "\n" +
-										"Is animation: " + has_animation + "\n" +
-										"Format: " + format, "Information");
+						MessageBox.Show("Width: " + info.Width + nl +
+										"Height: " + info.Height + nl +
+										"Has alpha: " + info.HasAlpha + nl +
+										"Is animation: " + info.IsAnimated + nl +
+										"Format: " + info.Format, "Information");
 					}
 				}
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + "\r\nIn WebPExample.buttonInfo_Click", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				MessageBox.Show(ex.Message + nl + "In WebPExample.buttonInfo_Click", "Error", MessageBoxButtons.OK,
+					MessageBoxIcon.Error);
 			}
 		}
 		#endregion

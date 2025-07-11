@@ -18,7 +18,7 @@
 //
 // Another functions:
 // Version GetVersion() - Get the library version
-// GetInfo(byte[] rawWebP, out int width, out int height, out bool has_alpha, out bool has_animation, out string format) - Get information of WEBP data
+// WebPInfo GetInfo(byte[] rawWebP) - Get information of WEBP data
 // float[] PictureDistortion(Bitmap source, Bitmap reference, int metric_type) - Get PSNR, SSIM or LSIM distortion metric between two pictures
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System;
@@ -57,20 +57,18 @@ namespace WebPWrapper
 
 			try {
 				//Get image width and height
-				int imgWidth, imgHeight;
-				bool hasAlpha, hasAnimation;
-				string format;
-				GetInfo(rawWebP, out imgWidth, out imgHeight, out hasAlpha, out hasAnimation, out format);
+				var info = GetInfo(rawWebP);
+
 
 				//Create a BitmapData and Lock all pixels to be written
-				if (hasAlpha)
-					pixelMap = new Bitmap(imgWidth, imgHeight, PixelFormat.Format32bppArgb);
+				if (info.HasAlpha)
+					pixelMap = new Bitmap(info.Width, info.Height, PixelFormat.Format32bppArgb);
 				else
-					pixelMap = new Bitmap(imgWidth, imgHeight, PixelFormat.Format24bppRgb);
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, imgWidth, imgHeight), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
+					pixelMap = new Bitmap(info.Width, info.Height, PixelFormat.Format24bppRgb);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, info.Width, info.Height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
 
 				//Uncompress the image
-				int outputSize = bmpData.Stride * imgHeight;
+				int outputSize = bmpData.Stride * info.Height;
 				IntPtr ptrData = pinnedWebP.AddrOfPinnedObject();
 				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
 					UnsafeNativeMethods.WebPDecodeBGRInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
@@ -505,7 +503,7 @@ namespace WebPWrapper
 		}
 
 		public void EncodeWithMeta(Bitmap pixelMap, string path, byte[] rawXmp,
-		byte quality = 85, byte speed = 4, bool multithread = false, int alphaQuality = 100)
+		byte quality = 85, byte speed = 4, bool multithread = false, byte alphaQuality = 100)
 		{
 			IntPtr mux = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
 			var config = new WebPConfig();
@@ -739,40 +737,32 @@ namespace WebPWrapper
 
 		/// <summary>Get info of WEBP data</summary>
 		/// <param name="rawWebP">The data of WebP</param>
-		/// <param name="width">width of image</param>
-		/// <param name="height">height of image</param>
-		/// <param name="has_alpha">Image has alpha channel</param>
-		/// <param name="has_animation">Image is a animation</param>
-		/// <param name="format">Format of image: 0 = undefined (/mixed), 1 = lossy, 2 = lossless</param>
-		public void GetInfo(byte[] rawWebP, out int width, out int height, out bool has_alpha, out bool has_animation, out string format)
+		public WebPInfo GetInfo(byte[] rawWebP)
 		{
-			VP8StatusCode result;
-			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
+			var features = new WebPBitstreamFeatures();
+			var pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
 			try {
-				IntPtr ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
+				var result = UnsafeNativeMethods.WebPGetFeatures(pinnedWebP.AddrOfPinnedObject(), rawWebP.Length, ref features);
 
-				WebPBitstreamFeatures features = new WebPBitstreamFeatures();
-				result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref features);
-
-				if (result != 0)
-					throw new Exception(result.ToString());
-
-				width = features.Width;
-				height = features.Height;
-				if (features.Has_alpha == 1) has_alpha = true; else has_alpha = false;
-				if (features.Has_animation == 1) has_animation = true; else has_animation = false;
-				switch (features.Format) {
-					case 1:
-						format = "lossy";
-						break;
-					case 2:
-						format = "lossless";
-						break;
-					default:
-						format = "undefined";
-						break;
+				if (result != 0) {
+					throw new ExternalException("Unable to get features of WebP image. Status is " + result, (int)result);
 				}
+				var info = new WebPInfo();
+				info.Width = (short)features.Width;
+				info.Height = (short)features.Height;
+				info.HasAlpha = features.Has_alpha == 1;
+				info.IsAnimated = features.Has_animation == 1;
+				var fmt = features.Format;
+				if (fmt == 1) {
+					info.Format = "lossy";
+				} else if (fmt == 2) {
+					info.Format = "lossless";
+				} else {
+					info.Format = "undefined";
+				}
+
+				return info;
 			} finally {
 				//Free memory
 				if (pinnedWebP.IsAllocated)
