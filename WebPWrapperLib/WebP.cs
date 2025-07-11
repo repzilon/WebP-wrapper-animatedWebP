@@ -5,16 +5,16 @@
 // Bitmap Load(string pathFileName) - Load a WebP file in bitmap.
 // Bitmap Decode(byte[] rawWebP) - Decode WebP data (rawWebP) to bitmap.
 // Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options) - Decode WebP data (rawWebP) to bitmap using 'options'.
-// Bitmap GetThumbnailFast(byte[] rawWebP, int width, int height) - Get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Fast mode.
-// Bitmap GetThumbnailQuality(byte[] rawWebP, int width, int height) - Fast get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Quality mode.
+// Bitmap GetThumbnailFast(byte[] rawWebP, short width, short height) - Get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Fast mode.
+// Bitmap GetThumbnailQuality(byte[] rawWebP, short width, short height) - Fast get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Quality mode.
 //
 // Encode Functions:
-// Save(Bitmap pixelMap, string pathFileName, int quality) - Save bitmap with quality lost to WebP file. Optionally select 'quality'.
-// byte[] EncodeLossy(Bitmap pixelMap, int quality) - Encode bitmap with quality lost to WebP byte array. Optionally select 'quality'.
-// byte[] EncodeLossy(Bitmap pixelMap, int quality, int speed, bool info) - Encode bitmap with quality lost to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
+// Save(Bitmap pixelMap, string pathFileName, byte quality) - Save bitmap with quality lost to WebP file. Optionally select 'quality'.
+// byte[] EncodeLossy(Bitmap pixelMap, byte quality) - Encode bitmap with quality lost to WebP byte array. Optionally select 'quality'.
+// byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed, bool info) - Encode bitmap with quality lost to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
 // byte[] EncodeLossless(Bitmap pixelMap) - Encode bitmap without quality lost to WebP byte array.
-// byte[] EncodeLossless(Bitmap pixelMap, int speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'.
-// byte[] EncodeNearLossless(Bitmap pixelMap, int quality, int speed = 9, bool info = false) - Encode bitmap with a near lossless method to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
+// byte[] EncodeLossless(Bitmap pixelMap, byte speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'.
+// byte[] EncodeNearLossless(Bitmap pixelMap, byte quality, byte speed = 9, bool info = false) - Encode bitmap with a near lossless method to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
 //
 // Another functions:
 // string GetVersion() - Get the library version
@@ -182,7 +182,7 @@ namespace WebPWrapper
 		/// <param name="width">Wanted width of thumbnail</param>
 		/// <param name="height">Wanted height of thumbnail</param>
 		/// <returns>Bitmap with the WebP thumbnail in 24bpp</returns>
-		public Bitmap GetThumbnailFast(byte[] rawWebP, int width, int height)
+		public Bitmap GetThumbnailFast(byte[] rawWebP, short width, short height)
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 			Bitmap pixelMap = null;
@@ -239,7 +239,7 @@ namespace WebPWrapper
 		/// <param name="width">Wanted width of thumbnail</param>
 		/// <param name="height">Wanted height of thumbnail</param>
 		/// <returns>Bitmap with the WebP thumbnail</returns>
-		public Bitmap GetThumbnailQuality(byte[] rawWebP, int width, int height)
+		public Bitmap GetThumbnailQuality(byte[] rawWebP, short width, short height)
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 			Bitmap pixelMap = null;
@@ -306,7 +306,7 @@ namespace WebPWrapper
 		/// <param name="pixelMap">Bitmap with the WebP image</param>
 		/// <param name="pathFileName">The file to write</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
-		public void Save(Bitmap pixelMap, string pathFileName, int quality = 75)
+		public void Save(Bitmap pixelMap, string pathFileName, byte quality = 75)
 		{
 			//Encode in webP format
 			byte[] rawWebP = EncodeLossy(pixelMap, quality);
@@ -319,7 +319,7 @@ namespace WebPWrapper
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossy(Bitmap pixelMap, int quality = 75)
+		public byte[] EncodeLossy(Bitmap pixelMap, byte quality = 75)
 		{
 			//test bmp
 			if (pixelMap.Width == 0 || pixelMap.Height == 0)
@@ -367,7 +367,7 @@ namespace WebPWrapper
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossy(Bitmap pixelMap, int quality, int speed, bool info = false)
+		public byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed, bool info = false)
 		{
 			//Initialize configuration structure
 			WebPConfig config = new WebPConfig();
@@ -446,7 +446,7 @@ namespace WebPWrapper
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossless(Bitmap pixelMap, int speed)
+		public byte[] EncodeLossless(Bitmap pixelMap, byte speed)
 		{
 			//Initialize configuration structure
 			WebPConfig config = new WebPConfig();
@@ -505,13 +505,13 @@ namespace WebPWrapper
 		}
 
 		public void EncodeWithMeta(Bitmap pixelMap, string path, byte[] rawXmp,
-		int quality = 85, int speed = 4, bool multithread = false, int alphaQuality = 100)
+		byte quality = 85, byte speed = 4, bool multithread = false, int alphaQuality = 100)
 		{
 			IntPtr mux = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
 			var config = new WebPConfig();
 			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, quality) == 0)
 				throw new Exception("Can´t configure preset");
-			config.method = Math.Max(Math.Min(speed, 6), 0); // 0 is fastest
+			config.method = Math.Max(Math.Min(speed, (byte)6), (byte)0); // 0 is fastest
 			config.thread_level = multithread ? 1 : 0;
 			config.alpha_quality = alphaQuality;
 
