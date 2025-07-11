@@ -1,6 +1,6 @@
-﻿////////////////////////////////////////////////////////////////////////////////////////////////////////////
+﻿/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Wrapper for WebP format in C#. (MIT) Jose M. Piñeiro and others
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Decode Functions:
 // Bitmap Load(string pathFileName) - Load a WebP file in bitmap.
 // Bitmap Decode(byte[] rawWebP) - Decode WebP data (rawWebP) to bitmap.
@@ -9,12 +9,12 @@
 // Bitmap GetThumbnailQuality(byte[] rawWebP, int width, int height) - Fast get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Quality mode.
 //
 // Encode Functions:
-// Save(Bitmap bmp, string pathFileName, int quality) - Save bitmap with quality lost to WebP file. Optionally select 'quality'.
-// byte[] EncodeLossy(Bitmap bmp, int quality) - Encode bitmap with quality lost to WebP byte array. Optionally select 'quality'.
-// byte[] EncodeLossy(Bitmap bmp, int quality, int speed, bool info) - Encode bitmap with quality lost to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
-// byte[] EncodeLossless(Bitmap bmp) - Encode bitmap without quality lost to WebP byte array.
-// byte[] EncodeLossless(Bitmap bmp, int speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'.
-// byte[] EncodeNearLossless(Bitmap bmp, int quality, int speed = 9, bool info = false) - Encode bitmap with a near lossless method to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
+// Save(Bitmap pixelMap, string pathFileName, int quality) - Save bitmap with quality lost to WebP file. Optionally select 'quality'.
+// byte[] EncodeLossy(Bitmap pixelMap, int quality) - Encode bitmap with quality lost to WebP byte array. Optionally select 'quality'.
+// byte[] EncodeLossy(Bitmap pixelMap, int quality, int speed, bool info) - Encode bitmap with quality lost to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
+// byte[] EncodeLossless(Bitmap pixelMap) - Encode bitmap without quality lost to WebP byte array.
+// byte[] EncodeLossless(Bitmap pixelMap, int speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'.
+// byte[] EncodeNearLossless(Bitmap pixelMap, int quality, int speed = 9, bool info = false) - Encode bitmap with a near lossless method to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
 //
 // Another functions:
 // string GetVersion() - Get the library version
@@ -51,7 +51,7 @@ namespace WebPWrapper
 		/// <returns>Bitmap with the WebP image</returns>
 		public Bitmap Decode(byte[] rawWebP)
 		{
-			Bitmap bmp = null;
+			Bitmap pixelMap = null;
 			BitmapData bmpData = null;
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
@@ -64,24 +64,24 @@ namespace WebPWrapper
 
 				//Create a BitmapData and Lock all pixels to be written
 				if (hasAlpha)
-					bmp = new Bitmap(imgWidth, imgHeight, PixelFormat.Format32bppArgb);
+					pixelMap = new Bitmap(imgWidth, imgHeight, PixelFormat.Format32bppArgb);
 				else
-					bmp = new Bitmap(imgWidth, imgHeight, PixelFormat.Format24bppRgb);
-				bmpData = bmp.LockBits(new Rectangle(0, 0, imgWidth, imgHeight), ImageLockMode.WriteOnly, bmp.PixelFormat);
+					pixelMap = new Bitmap(imgWidth, imgHeight, PixelFormat.Format24bppRgb);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, imgWidth, imgHeight), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
 
 				//Uncompress the image
 				int outputSize = bmpData.Stride * imgHeight;
 				IntPtr ptrData = pinnedWebP.AddrOfPinnedObject();
-				if (bmp.PixelFormat == PixelFormat.Format24bppRgb)
+				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
 					UnsafeNativeMethods.WebPDecodeBGRInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
 				else
 					UnsafeNativeMethods.WebPDecodeBGRAInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
 
-				return bmp;
+				return pixelMap;
 			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
-					bmp.UnlockBits(bmpData);
+					pixelMap.UnlockBits(bmpData);
 
 				//Free memory
 				if (pinnedWebP.IsAllocated)
@@ -96,7 +96,7 @@ namespace WebPWrapper
 		public Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options, PixelFormat pixelFormat = PixelFormat.DontCare)
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
-			Bitmap bmp = null;
+			Bitmap pixelMap = null;
 			BitmapData bmpData = null;
 			VP8StatusCode result;
 			try {
@@ -143,19 +143,19 @@ namespace WebPWrapper
 				//Create a BitmapData and Lock all pixels to be written
 				if (config.input.Has_alpha == 1) {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_bgrA;
-					bmp = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format32bppArgb);
+					pixelMap = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format32bppArgb);
 				} else {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
-					bmp = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format24bppRgb);
+					pixelMap = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format24bppRgb);
 				}
-				bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.WriteOnly, bmp.PixelFormat);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
 
 				// Specify the output format
 				config.output.u.RGBA.rgba = bmpData.Scan0;
 				config.output.u.RGBA.stride = bmpData.Stride;
-				config.output.u.RGBA.size = (UIntPtr)(bmp.Height * bmpData.Stride);
-				config.output.height = bmp.Height;
-				config.output.width = bmp.Width;
+				config.output.u.RGBA.size = (UIntPtr)(pixelMap.Height * bmpData.Stride);
+				config.output.height = pixelMap.Height;
+				config.output.width = pixelMap.Width;
 				config.output.is_external_memory = 1;
 
 				// Decode
@@ -165,11 +165,11 @@ namespace WebPWrapper
 				}
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 
-				return bmp;
+				return pixelMap;
 			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
-					bmp.UnlockBits(bmpData);
+					pixelMap.UnlockBits(bmpData);
 
 				//Free memory
 				if (pinnedWebP.IsAllocated)
@@ -185,7 +185,7 @@ namespace WebPWrapper
 		public Bitmap GetThumbnailFast(byte[] rawWebP, int width, int height)
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
-			Bitmap bmp = null;
+			Bitmap pixelMap = null;
 			BitmapData bmpData = null;
 
 			try {
@@ -202,8 +202,8 @@ namespace WebPWrapper
 				config.options.scaled_height = height;
 
 				// Create a BitmapData and Lock all pixels to be written
-				bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-				bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bmp.PixelFormat);
+				pixelMap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
 
 				// Specify the output format
 				config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
@@ -222,11 +222,11 @@ namespace WebPWrapper
 
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 
-				return bmp;
+				return pixelMap;
 			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
-					bmp.UnlockBits(bmpData);
+					pixelMap.UnlockBits(bmpData);
 
 				//Free memory
 				if (pinnedWebP.IsAllocated)
@@ -242,7 +242,7 @@ namespace WebPWrapper
 		public Bitmap GetThumbnailQuality(byte[] rawWebP, int width, int height)
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
-			Bitmap bmp = null;
+			Bitmap pixelMap = null;
 			BitmapData bmpData = null;
 
 			try {
@@ -266,12 +266,12 @@ namespace WebPWrapper
 				//Create a BitmapData and Lock all pixels to be written
 				if (config.input.Has_alpha == 1) {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_bgrA;
-					bmp = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+					pixelMap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 				} else {
 					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
-					bmp = new Bitmap(width, height, PixelFormat.Format24bppRgb);
+					pixelMap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
 				}
-				bmpData = bmp.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, bmp.PixelFormat);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
 
 				// Specify the output format
 				config.output.u.RGBA.rgba = bmpData.Scan0;
@@ -288,11 +288,11 @@ namespace WebPWrapper
 
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 
-				return bmp;
+				return pixelMap;
 			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
-					bmp.UnlockBits(bmpData);
+					pixelMap.UnlockBits(bmpData);
 
 				//Free memory
 				if (pinnedWebP.IsAllocated)
@@ -303,30 +303,30 @@ namespace WebPWrapper
 
 		#region | Public Encode Functions |
 		/// <summary>Save bitmap to file in WebP format</summary>
-		/// <param name="bmp">Bitmap with the WebP image</param>
+		/// <param name="pixelMap">Bitmap with the WebP image</param>
 		/// <param name="pathFileName">The file to write</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
-		public void Save(Bitmap bmp, string pathFileName, int quality = 75)
+		public void Save(Bitmap pixelMap, string pathFileName, int quality = 75)
 		{
 			//Encode in webP format
-			byte[] rawWebP = EncodeLossy(bmp, quality);
+			byte[] rawWebP = EncodeLossy(pixelMap, quality);
 
 			//Write webP file
 			File.WriteAllBytes(pathFileName, rawWebP);
 		}
 
 		/// <summary>Lossy encoding bitmap to WebP (Simple encoding API)</summary>
-		/// <param name="bmp">Bitmap with the image</param>
+		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossy(Bitmap bmp, int quality = 75)
+		public byte[] EncodeLossy(Bitmap pixelMap, int quality = 75)
 		{
 			//test bmp
-			if (bmp.Width == 0 || bmp.Height == 0)
-				throw new ArgumentException("Bitmap contains no data.", "bmp");
-			if (bmp.Width > WEBP_MAX_DIMENSION || bmp.Height > WEBP_MAX_DIMENSION)
+			if (pixelMap.Width == 0 || pixelMap.Height == 0)
+				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
+			if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION)
 				throw new NotSupportedException("Bitmap's dimension is too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
-			if (bmp.PixelFormat != PixelFormat.Format24bppRgb && bmp.PixelFormat != PixelFormat.Format32bppArgb)
+			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb)
 				throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
 
 			BitmapData bmpData = null;
@@ -336,13 +336,13 @@ namespace WebPWrapper
 				int size;
 
 				//Get bmp data
-				bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, bmp.PixelFormat);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.ReadOnly, pixelMap.PixelFormat);
 
 				//Compress the bmp data
-				if (bmp.PixelFormat == PixelFormat.Format24bppRgb)
-					size = UnsafeNativeMethods.WebPEncodeBGR(bmpData.Scan0, bmp.Width, bmp.Height, bmpData.Stride, quality, out unmanagedData);
+				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
+					size = UnsafeNativeMethods.WebPEncodeBGR(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, quality, out unmanagedData);
 				else
-					size = UnsafeNativeMethods.WebPEncodeBGRA(bmpData.Scan0, bmp.Width, bmp.Height, bmpData.Stride, quality, out unmanagedData);
+					size = UnsafeNativeMethods.WebPEncodeBGRA(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, quality, out unmanagedData);
 				if (size == 0)
 					throw new Exception("Can´t encode WebP");
 
@@ -354,7 +354,7 @@ namespace WebPWrapper
 			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
-					bmp.UnlockBits(bmpData);
+					pixelMap.UnlockBits(bmpData);
 
 				//Free memory
 				if (unmanagedData != IntPtr.Zero)
@@ -363,11 +363,11 @@ namespace WebPWrapper
 		}
 
 		/// <summary>Lossy encoding bitmap to WebP (Advanced encoding API)</summary>
-		/// <param name="bmp">Bitmap with the image</param>
+		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossy(Bitmap bmp, int quality, int speed, bool info = false)
+		public byte[] EncodeLossy(Bitmap pixelMap, int quality, int speed, bool info = false)
 		{
 			//Initialize configuration structure
 			WebPConfig config = new WebPConfig();
@@ -397,34 +397,34 @@ namespace WebPWrapper
 			} else
 				config.preprocessing = 3;
 
-			return AdvancedEncode(bmp, config, info);
+			return AdvancedEncode(pixelMap, config, info);
 		}
 
 		/// <summary>Lossless encoding bitmap to WebP (Simple encoding API)</summary>
-		/// <param name="bmp">Bitmap with the image</param>
+		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossless(Bitmap bmp)
+		public byte[] EncodeLossless(Bitmap pixelMap)
 		{
 			//test bmp
-			if (bmp.Width == 0 || bmp.Height == 0)
-				throw new ArgumentException("Bitmap contains no data.", "bmp");
-			if (bmp.Width > WEBP_MAX_DIMENSION || bmp.Height > WEBP_MAX_DIMENSION)
+			if (pixelMap.Width == 0 || pixelMap.Height == 0)
+				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
+			if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION)
 				throw new NotSupportedException("Bitmap's dimension is too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
-			if (bmp.PixelFormat != PixelFormat.Format24bppRgb && bmp.PixelFormat != PixelFormat.Format32bppArgb)
+			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb)
 				throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
 
 			BitmapData bmpData = null;
 			IntPtr unmanagedData = IntPtr.Zero;
 			try {
 				//Get bmp data
-				bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, bmp.PixelFormat);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.ReadOnly, pixelMap.PixelFormat);
 
 				//Compress the bmp data
 				int size;
-				if (bmp.PixelFormat == PixelFormat.Format24bppRgb)
-					size = UnsafeNativeMethods.WebPEncodeLosslessBGR(bmpData.Scan0, bmp.Width, bmp.Height, bmpData.Stride, out unmanagedData);
+				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
+					size = UnsafeNativeMethods.WebPEncodeLosslessBGR(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, out unmanagedData);
 				else
-					size = UnsafeNativeMethods.WebPEncodeLosslessBGRA(bmpData.Scan0, bmp.Width, bmp.Height, bmpData.Stride, out unmanagedData);
+					size = UnsafeNativeMethods.WebPEncodeLosslessBGRA(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, out unmanagedData);
 
 				//Copy image compress data to output array
 				byte[] rawWebP = new byte[size];
@@ -434,7 +434,7 @@ namespace WebPWrapper
 			} finally {
 				//Unlock the pixels
 				if (bmpData != null)
-					bmp.UnlockBits(bmpData);
+					pixelMap.UnlockBits(bmpData);
 
 				//Free memory
 				if (unmanagedData != IntPtr.Zero)
@@ -443,10 +443,10 @@ namespace WebPWrapper
 		}
 
 		/// <summary>Lossless encoding image in bitmap (Advanced encoding API)</summary>
-		/// <param name="bmp">Bitmap with the image</param>
+		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossless(Bitmap bmp, int speed)
+		public byte[] EncodeLossless(Bitmap pixelMap, int speed)
 		{
 			//Initialize configuration structure
 			WebPConfig config = new WebPConfig();
@@ -472,15 +472,15 @@ namespace WebPWrapper
 			config.use_sharp_yuv = 1;
 			config.exact = 0;
 
-			return AdvancedEncode(bmp, config, false);
+			return AdvancedEncode(pixelMap, config, false);
 		}
 
 		/// <summary>Near lossless encoding image in bitmap</summary>
-		/// <param name="bmp">Bitmap with the image</param>
+		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
 		/// <returns>Compress data</returns>
-		public byte[] EncodeNearLossless(Bitmap bmp, int quality, int speed = 9)
+		public byte[] EncodeNearLossless(Bitmap pixelMap, int quality, int speed = 9)
 		{
 			//test DLL version
 			if (UnsafeNativeMethods.WebPGetDecoderVersion() <= 1082)
@@ -501,10 +501,10 @@ namespace WebPWrapper
 			config.use_sharp_yuv = 1;
 			config.exact = 0;
 
-			return AdvancedEncode(bmp, config, false);
+			return AdvancedEncode(pixelMap, config, false);
 		}
 
-		public void EncodeWithMeta(Bitmap bmp, string path, byte[] rawXmp,
+		public void EncodeWithMeta(Bitmap pixelMap, string path, byte[] rawXmp,
 		int quality = 85, int speed = 4, bool multithread = false, int alphaQuality = 100)
 		{
 			IntPtr mux = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
@@ -515,7 +515,7 @@ namespace WebPWrapper
 			config.thread_level = multithread ? 1 : 0;
 			config.alpha_quality = alphaQuality;
 
-			var rawWebP = AdvancedEncode(bmp, config, false);
+			var rawWebP = AdvancedEncode(pixelMap, config, false);
 			WebPMuxError err;
 
 			// TODO: directly use Ptr from AdvancedEncode instead of managed<>unmanaged back and forth
@@ -872,14 +872,14 @@ namespace WebPWrapper
 
 		#region | Private Methods |
 		/// <summary>Encoding image  using Advanced encoding API</summary>
-		/// <param name="bmp">Bitmap with the image</param>
+		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="config">Configuration for encode</param>
 		/// <param name="info">True if need encode info.</param>
 		/// <returns>Compressed data</returns>
 #if UNSAFE
 		unsafe
 #endif
-		private byte[] AdvancedEncode(Bitmap bmp, WebPConfig config, bool info)
+		private byte[] AdvancedEncode(Bitmap pixelMap, WebPConfig config, bool info)
 		{
 			byte[] rawWebP = null;
 #if UNSAFE
@@ -901,35 +901,35 @@ namespace WebPWrapper
 					throw new Exception("Bad configuration parameters");
 
 				//test bmp
-				if (bmp.Width == 0 || bmp.Height == 0)
-					throw new ArgumentException("Bitmap contains no data.", "bmp");
-				if (bmp.Width > WEBP_MAX_DIMENSION || bmp.Height > WEBP_MAX_DIMENSION)
+				if (pixelMap.Width == 0 || pixelMap.Height == 0)
+					throw new ArgumentException("Bitmap contains no data.", "pixelMap");
+				if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION)
 					throw new NotSupportedException("Bitmap's dimension is too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
-				if (bmp.PixelFormat != PixelFormat.Format24bppRgb && bmp.PixelFormat != PixelFormat.Format32bppArgb)
+				if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb)
 					throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
 
 				// Setup the input data, allocating a the bitmap, width and height
-				bmpData = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, bmp.PixelFormat);
+				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.ReadOnly, pixelMap.PixelFormat);
 				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpic) != 1)
 					throw new Exception("Can´t initialize WebPPictureInit");
-				wpic.width = (int)bmp.Width;
-				wpic.height = (int)bmp.Height;
+				wpic.width = (int)pixelMap.Width;
+				wpic.height = (int)pixelMap.Height;
 				wpic.use_argb = 1;
 
-				if (bmp.PixelFormat == PixelFormat.Format32bppArgb) {
+				if (pixelMap.PixelFormat == PixelFormat.Format32bppArgb) {
 					//Put the bitmap componets in wpic
 					int result = UnsafeNativeMethods.WebPPictureImportBGRA(ref wpic, bmpData.Scan0, bmpData.Stride);
 					if (result != 1)
 						throw new Exception("Can´t allocate memory in WebPPictureImportBGRA");
 					wpic.colorspace = (uint)WEBP_CSP_MODE.MODE_bgrA;
-					dataWebpSize = bmp.Width * bmp.Height * 32;
-					dataWebp = new byte[bmp.Width * bmp.Height * 32];                //Memory for WebP output
+					dataWebpSize = pixelMap.Width * pixelMap.Height * 32;
+					dataWebp = new byte[pixelMap.Width * pixelMap.Height * 32];                //Memory for WebP output
 				} else {
 					//Put the bitmap contents in WebPPicture instance
 					int result = UnsafeNativeMethods.WebPPictureImportBGR(ref wpic, bmpData.Scan0, bmpData.Stride);
 					if (result != 1)
 						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-					dataWebpSize = bmp.Width * bmp.Height * 24;
+					dataWebpSize = pixelMap.Width * pixelMap.Height * 24;
 				}
 
 				//Set up statistics of compression
@@ -940,15 +940,15 @@ namespace WebPWrapper
 					wpic.stats = ptrStats;
 				}
 
+#if UNSAFE
 				//Memory for WebP output
 				if (dataWebpSize > 2147483591)
 					dataWebpSize = 2147483591;
 
-#if UNSAFE
 				dataWebpPtr = Marshal.AllocHGlobal(dataWebpSize); // TODO: shouldn't we allocate less? how to know?
                 var initPtr = (byte*)dataWebpPtr.ToPointer();
 #else
-				dataWebp = new byte[bmp.Width * bmp.Height * 32];
+				dataWebp = new byte[pixelMap.Width * pixelMap.Height * 32];
 				pinnedArrayHandle = GCHandle.Alloc(dataWebp, GCHandleType.Pinned);
 				IntPtr initPtr = pinnedArrayHandle.AddrOfPinnedObject();
 #endif
@@ -966,14 +966,14 @@ namespace WebPWrapper
 				_myWriterDelegate = null;
 
 				//Unlock the pixels
-				bmp.UnlockBits(bmpData);
+				pixelMap.UnlockBits(bmpData);
 				bmpData = null;
 
 				//Copy webpData to rawWebP
 #if UNSAFE
                 var size = (int)(wpic.custom_ptr - initPtr);
 				rawWebP = new byte[size];
-				Marshal.Copy(dataWebpPtr, rawWebP, 0, size); // TODO: directly pass unmanaged pointer to metada encode
+				Marshal.Copy(dataWebpPtr, rawWebP, 0, size); // TODO: directly pass unmanaged pointer to metadata encode
 #else
 				int size = (int)((long)wpic.custom_ptr - (long)initPtr);
 				rawWebP = new byte[size];
@@ -1037,7 +1037,7 @@ namespace WebPWrapper
 
 				//Unlock the pixels
 				if (bmpData != null) {
-					bmp.UnlockBits(bmpData);
+					pixelMap.UnlockBits(bmpData);
 				}
 
 				//Free memory
