@@ -17,7 +17,7 @@
 // byte[] EncodeNearLossless(Bitmap pixelMap, byte quality, byte speed = 9, bool info = false) - Encode bitmap with a near lossless method to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
 //
 // Another functions:
-// string GetVersion() - Get the library version
+// Version GetVersion() - Get the library version
 // GetInfo(byte[] rawWebP, out int width, out int height, out bool has_alpha, out bool has_animation, out string format) - Get information of WEBP data
 // float[] PictureDistortion(Bitmap source, Bitmap reference, int metric_type) - Get PSNR, SSIM or LSIM distortion metric between two pictures
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -731,13 +731,10 @@ namespace WebPWrapper
 		#region | Another Public Functions |
 		/// <summary>Get the libwebp version</summary>
 		/// <returns>Version of library</returns>
-		public string GetVersion()
+		public Version GetVersion()
 		{
-			uint v = (uint)UnsafeNativeMethods.WebPGetDecoderVersion();
-			var revision = v % 256;
-			var minor = (v >> 8) % 256;
-			var major = (v >> 16) % 256;
-			return major + "." + minor + "." + revision;
+			var v = UnsafeNativeMethods.WebPGetDecoderVersion();
+			return new Version((v >> 16) % 256, (v >> 8) % 256, v % 256);
 		}
 
 		/// <summary>Get info of WEBP data</summary>
