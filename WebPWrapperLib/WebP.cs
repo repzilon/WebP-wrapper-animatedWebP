@@ -19,10 +19,11 @@
 // Another functions:
 // Version GetVersion() - Get the library version
 // WebPInfo GetInfo(byte[] rawWebP) - Get information of WEBP data
-// float[] PictureDistortion(Bitmap source, Bitmap reference, int metric_type) - Get PSNR, SSIM or LSIM distortion metric between two pictures
+// float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistorsionMetric metricType) - Get PSNR, SSIM or LSIM distortion metric between two pictures
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -773,9 +774,9 @@ namespace WebPWrapper
 		/// <summary>Compute PSNR, SSIM or LSIM distortion metric between two pictures. Warning: this function is rather CPU-intensive</summary>
 		/// <param name="source">Picture to measure</param>
 		/// <param name="reference">Reference picture</param>
-		/// <param name="metric_type">0 = PSNR, 1 = SSIM, 2 = LSIM</param>
+		/// <param name="metricType">0 = PSNR, 1 = SSIM, 2 = LSIM</param>
 		/// <returns>dB in the Y/U/V/Alpha/All order</returns>
-		public float[] GetPictureDistortion(Bitmap source, Bitmap reference, int metric_type)
+		public float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistorsionMetric metricType)
 		{
 			WebPPicture wpicSource = new WebPPicture();
 			WebPPicture wpicReference = new WebPPicture();
@@ -785,14 +786,18 @@ namespace WebPWrapper
 			GCHandle pinnedResult = GCHandle.Alloc(result, GCHandleType.Pinned);
 
 			try {
-				if (source == null)
-					throw new Exception("Source picture is void");
-				if (reference == null)
-					throw new Exception("Reference picture is void");
-				if (metric_type > 2)
-					throw new Exception("Bad metric_type. Use 0 = PSNR, 1 = SSIM, 2 = LSIM");
-				if (source.Width != reference.Width || source.Height != reference.Height)
-					throw new Exception("Source and Reference pictures have different dimensions");
+				if (source == null) {
+					throw new ArgumentNullException("source", "Source picture is void");
+				}
+				if (reference == null) {
+					throw new ArgumentNullException("reference", "Reference picture is void");
+				}
+				if (metricType > DistorsionMetric.LightweightSimilarity) {
+					throw new InvalidEnumArgumentException("metricType", (int)metricType, typeof(DistorsionMetric));
+				}
+				if (source.Width != reference.Width || source.Height != reference.Height) {
+					throw new ArgumentException("Source and Reference pictures have different dimensions");
+				}
 
 				// Setup the source picture data, allocating the bitmap, width and height
 				sourceBmpData = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), ImageLockMode.ReadOnly, source.PixelFormat);
@@ -835,7 +840,7 @@ namespace WebPWrapper
 
 				//Measure
 				IntPtr ptrResult = pinnedResult.AddrOfPinnedObject();
-				if (UnsafeNativeMethods.WebPPictureDistortion(ref wpicSource, ref wpicReference, metric_type, ptrResult) != 1)
+				if (UnsafeNativeMethods.WebPPictureDistortion(ref wpicSource, ref wpicReference, (int)metricType, ptrResult) != 1)
 					throw new Exception("Can´t measure.");
 				return result;
 			} finally {
@@ -1097,7 +1102,7 @@ namespace WebPWrapper
 
 			_disposed = true;
 		}
-#endregion
+		#endregion
 
 		#region | Destruction |
 		/// <summary>Free memory</summary>
@@ -1111,6 +1116,6 @@ namespace WebPWrapper
 		{
 			Dispose(false);
 		}
-#endregion
+		#endregion
 	}
 }

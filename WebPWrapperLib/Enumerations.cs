@@ -237,5 +237,12 @@
 		WEBP_MUX_MEMORY_ERROR = -3,
 		WEBP_MUX_NOT_ENOUGH_DATA = -4
 	}
+
+	public enum DistorsionMetric : byte
+	{
+		PeakSignalNoiseRatio = 0,
+		StructuralSimilarity,
+		LightweightSimilarity
+	}
 	#endregion
 }
