@@ -35,6 +35,8 @@ namespace WebPWrapper
 	{
 		private const int WEBP_MAX_DIMENSION = 16383;
 
+		private UnsafeNativeMethods.WebPMemoryWrite _myWriterDelegate;
+
 		#region | Public Decode Functions |
 		/// <summary>Read a WebP file</summary>
 		/// <param name="pathFileName">WebP file to load</param>
@@ -953,15 +955,15 @@ namespace WebPWrapper
 				wpic.custom_ptr = initPtr;
 
 				//Set up a byte-writing method (write-to-memory, in this case)
-				UnsafeNativeMethods.OnCallback = new UnsafeNativeMethods.WebPMemoryWrite(MyWriter);
-				wpic.writer = Marshal.GetFunctionPointerForDelegate(UnsafeNativeMethods.OnCallback);
+				_myWriterDelegate = new UnsafeNativeMethods.WebPMemoryWrite(MyWriter);
+				wpic.writer = Marshal.GetFunctionPointerForDelegate(_myWriterDelegate);
 
 				//compress the input samples
 				if (UnsafeNativeMethods.WebPEncode(ref config, ref wpic) != 1)
 					throw new Exception("Encoding error: " + ((WebPEncodingError)wpic.error_code).ToString());
 
 				//Remove OnCallback
-				UnsafeNativeMethods.OnCallback = null;
+				_myWriterDelegate = null;
 
 				//Unlock the pixels
 				bmp.UnlockBits(bmpData);

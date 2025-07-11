@@ -146,7 +146,6 @@ namespace WebPWrapper
 		/// <returns></returns>
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		internal delegate int WebPMemoryWrite([In] IntPtr data, UIntPtr data_size, ref WebPPicture wpic);
-		internal static WebPMemoryWrite OnCallback;
 
 		/// <summary>Compress to WebP format</summary>
 		/// <param name="config">The configuration structure for compression parameters</param>
