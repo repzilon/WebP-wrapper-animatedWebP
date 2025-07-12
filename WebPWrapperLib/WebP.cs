@@ -125,48 +125,23 @@ namespace WebPWrapper
 				}
 #endif
 
-				var cop = config.options;
-				cop.bypass_filtering = options.bypass_filtering;
-				cop.no_fancy_upsampling = options.no_fancy_upsampling;
-				cop.use_cropping = options.use_cropping;
-				cop.crop_left = options.crop_left;
-				cop.crop_top = options.crop_top;
-				cop.crop_width = options.crop_width;
-				cop.crop_height = options.crop_height;
-				cop.use_scaling = options.use_scaling;
-				cop.scaled_width = options.scaled_width;
-				cop.scaled_height = options.scaled_height;
-				cop.use_threads = options.use_threads;
-				cop.dithering_strength = options.dithering_strength;
-				cop.flip = options.flip;
-				cop.alpha_dithering_strength = options.alpha_dithering_strength;
+				// TODO : could we just copy over the full structure?
+				config.options.bypass_filtering         = options.bypass_filtering;
+				config.options.no_fancy_upsampling      = options.no_fancy_upsampling;
+				config.options.use_cropping             = options.use_cropping;
+				config.options.crop_left                = options.crop_left;
+				config.options.crop_top                 = options.crop_top;
+				config.options.crop_width               = options.crop_width;
+				config.options.crop_height              = options.crop_height;
+				config.options.use_scaling              = options.use_scaling;
+				config.options.scaled_width             = options.scaled_width;
+				config.options.scaled_height            = options.scaled_height;
+				config.options.use_threads              = options.use_threads;
+				config.options.dithering_strength       = options.dithering_strength;
+				config.options.flip                     = options.flip;
+				config.options.alpha_dithering_strength = options.alpha_dithering_strength;
 
-				//Create a BitmapData and Lock all pixels to be written
-				if (config.input.Has_alpha == 1) {
-					config.output.colorspace = WEBP_CSP_MODE.MODE_bgrA;
-					pixelMap = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format32bppArgb);
-				} else {
-					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
-					pixelMap = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format24bppRgb);
-				}
-
-				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
-
-				// Specify the output format
-				config.output.u.RGBA.rgba = bmpData.Scan0;
-				config.output.u.RGBA.stride = bmpData.Stride;
-				config.output.u.RGBA.size = (UIntPtr)(pixelMap.Height * bmpData.Stride);
-				config.output.height = pixelMap.Height;
-				config.output.width = pixelMap.Width;
-				config.output.is_external_memory = 1;
-
-				// Decode
-				result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
-				if (result != VP8StatusCode.VP8_STATUS_OK) {
-					throw new Exception("Failed WebPDecode with error " + result);
-				}
-				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
-
+				pixelMap = CoreDecode(rawWebP, config, ptrRawWebP, out bmpData);
 				return pixelMap;
 			} finally {
 				UnlockPin(pixelMap, bmpData, pinnedWebP);
@@ -983,6 +958,36 @@ namespace WebPWrapper
 			}
 			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb) {
 				throw new NotSupportedException("Supported pixel formats are Format24bppRgb and Format32bppArgb only.");
+			}
+		}
+
+		private static Bitmap CoreDecode(byte[] rawWebP, WebPDecoderConfig config, IntPtr ptrRawWebP, out BitmapData bmpData)
+		{
+			//Create a BitmapData and Lock all pixels to be written
+			var blnAlpha = config.input.Has_alpha == 1;
+			config.output.colorspace = blnAlpha ? WEBP_CSP_MODE.MODE_bgrA : WEBP_CSP_MODE.MODE_BGR;
+			var pixelMap = new Bitmap(config.input.Width, config.input.Height,
+				blnAlpha ? PixelFormat.Format32bppArgb: PixelFormat.Format24bppRgb);
+
+			bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly); // caller have to unlock
+
+			// Specify the output format
+			config.output.u.RGBA.rgba        = bmpData.Scan0;
+			config.output.u.RGBA.stride      = bmpData.Stride;
+			config.output.u.RGBA.size        = (UIntPtr)(pixelMap.Height * bmpData.Stride);
+			config.output.height             = pixelMap.Height;
+			config.output.width              = pixelMap.Width;
+			config.output.is_external_memory = 1;
+
+			// Decode
+			try {
+				var result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
+				if (result != VP8StatusCode.VP8_STATUS_OK) {
+					throw new Exception("Failed WebPDecode with error " + result);
+				}
+				return pixelMap;
+			} finally {
+				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 			}
 		}
 		#endregion
