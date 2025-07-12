@@ -303,18 +303,18 @@ namespace WebPWrapper
 		/// Holds information about one frame.
 		/// </summary>
 		/// <remarks>
-		/// AnimLoad() / AnimDecode() return a list of FrameData objects.
+		/// AnimLoad() / AnimDecode() return a list of Frame[Bitmap] objects and AnimGetFrame() returns a Frame[byte[]] object.
 		/// </remarks>
-		public class FrameData
+		public class Frame<T>
 		{
-			public Bitmap Bitmap { get; set; }
+			public T Data { get; set; }
 			public int Duration { get; set; }
 		}
 
 		/// <summary>Read and Decode an Animated WebP file</summary>
 		/// <param name="pathFileName">Animated WebP file to load</param>
 		/// <returns>Bitmaps of the Animated WebP frames</returns>
-		public IEnumerable<FrameData> AnimLoad(string pathFileName)
+		public IEnumerable<Frame<Bitmap>> AnimLoad(string pathFileName)
 		{
 			return AnimDecode(File.ReadAllBytes(pathFileName));
 		}
@@ -345,7 +345,7 @@ namespace WebPWrapper
 
 				Rectangle rect = new Rectangle(0, 0, (int)anim_info.canvas_width, (int)anim_info.canvas_height);
 
-				List<FrameData> frames = new List<FrameData>();
+				List<Frame<Bitmap>> frames = new List<Frame<Bitmap>>();
 				int oldTimestamp = 0;
 				int idx = 0;
 				while (UnsafeNativeMethods.WebPAnimDecoderHasMoreFrames(dec.decoder)) {
@@ -362,7 +362,7 @@ namespace WebPWrapper
 						bitmap.UnlockBits(bmpData);
 						bmpData = null;
 
-						frames.Add(new FrameData() { Bitmap = bitmap, Duration = timestamp - oldTimestamp });
+						frames.Add(new Frame<Bitmap>() { Data = bitmap, Duration = timestamp - oldTimestamp });
 					}
 
 					oldTimestamp = timestamp;
@@ -379,19 +379,6 @@ namespace WebPWrapper
 			} finally {
 				UnlockPin(bitmap, bmpData, pinnedWebP);
 			}
-		}
-
-		/// <summary>
-		/// Holds information about one frame in compressed form.
-		/// </summary>
-		/// <remarks>
-		/// AnimGetFrame() returns a FrameDataRaw object.
-		/// </remarks>
-		public class FrameDataRaw
-		{
-			public byte[] Data { get; set; }
-			public int Size { get; set; }
-			public int Duration { get; set; }
 		}
 
 		/// <summary>Initialize the library for handling the given WebP file.</summary>
@@ -433,7 +420,7 @@ namespace WebPWrapper
 		/// <summary>Gets the raw frame data.</summary>
 		/// <param name="frameNumber"></param>
 		/// <returns>object with the frame's raw data</returns>
-		public FrameDataRaw AnimGetFrame(int frameNumber)
+		public Frame<byte[]> AnimGetFrame(int frameNumber)
 		{
 			if (_webPAnimDecoder.decoder == IntPtr.Zero) {
 				throw new ApplicationException("Decoder has not been initialized.");
@@ -451,7 +438,7 @@ namespace WebPWrapper
 			byte[] bytes = new byte[size];
 			Marshal.Copy(iter.fragment.data, bytes, 0, size);
 
-			FrameDataRaw fd = new FrameDataRaw() { Data = bytes, Duration = iter.duration };
+			var fd = new Frame<byte[]> { Data = bytes, Duration = iter.duration };
 
 			UnsafeNativeMethods.WebPDemuxReleaseIterator(iter);
 
