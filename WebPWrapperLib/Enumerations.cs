@@ -158,51 +158,6 @@
 	}
 
 	/// <summary>
-	/// Decoding states. State normally flows as:
-	/// WEBP_HEADER->VP8_HEADER->VP8_PARTS0->VP8_DATA->DONE for a lossy image, and
-	/// WEBP_HEADER->VP8L_HEADER->VP8L_DATA->DONE for a lossless image.
-	/// If there is any error the decoder goes into state ERROR.
-	/// </summary>
-	internal enum DecState
-	{
-		/// <summary>All the data before that of the VP8/VP8L chunk.</summary>
-		STATE_WEBP_HEADER,
-
-		/// <summary>The VP8 Frame header (within the VP8 chunk).</summary>
-		STATE_VP8_HEADER,
-
-		STATE_VP8_PARTS0,
-
-		STATE_VP8_DATA,
-
-		STATE_VP8L_HEADER,
-
-		STATE_VP8L_DATA,
-
-		STATE_DONE,
-
-		STATE_ERROR
-	}
-
-	/// <summary>
-	/// Life of a Demux object
-	/// </summary>
-	internal enum WebPDemuxState
-	{
-		/// <summary>An error occurred while parsing.</summary>
-		WEBP_DEMUX_PARSE_ERROR = -1,
-
-		/// <summary>Not enough data to parse full header.</summary>
-		WEBP_DEMUX_PARSING_HEADER = 0,
-
-		/// <summary>Header parsing complete, data may be available.</summary>
-		WEBP_DEMUX_PARSED_HEADER = 1,
-
-		/// <summary>Entire file has been parsed.</summary>
-		WEBP_DEMUX_DONE = 2
-	}
-
-	/// <summary>
 	/// Blend operation (animation only). Indicates how transparent pixels of the
 	/// current frame are blended with those of the previous canvas.
 	/// </summary>
