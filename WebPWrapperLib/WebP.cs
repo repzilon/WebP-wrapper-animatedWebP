@@ -155,48 +155,7 @@ namespace WebPWrapper
 		/// <returns>Bitmap with the WebP thumbnail in 24bpp</returns>
 		public Bitmap GetThumbnailFast(byte[] rawWebP, short width, short height)
 		{
-			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
-			Bitmap pixelMap = null;
-			BitmapData bmpData = null;
-
-			try {
-				WebPDecoderConfig config = new WebPDecoderConfig();
-				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0)
-					throw new Exception("WebPInitDecoderConfig failed. Wrong version?");
-
-				// Set up decode options
-				config.options.bypass_filtering = 1;
-				config.options.no_fancy_upsampling = 1;
-				config.options.use_threads = 1;
-				config.options.use_scaling = 1;
-				config.options.scaled_width = width;
-				config.options.scaled_height = height;
-
-				// Create a BitmapData and Lock all pixels to be written
-				pixelMap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
-
-				// Specify the output format
-				config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
-				config.output.u.RGBA.rgba = bmpData.Scan0;
-				config.output.u.RGBA.stride = bmpData.Stride;
-				config.output.u.RGBA.size = (UIntPtr)(height * bmpData.Stride);
-				config.output.height = height;
-				config.output.width = width;
-				config.output.is_external_memory = 1;
-
-				// Decode
-				IntPtr ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
-				VP8StatusCode result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
-				if (result != VP8StatusCode.VP8_STATUS_OK)
-					throw new Exception("Failed WebPDecode with error " + result);
-
-				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
-
-				return pixelMap;
-			} finally {
-				UnlockPin(pixelMap, bmpData, pinnedWebP);
-			}
+			return GetThumbnail(rawWebP, width, height, false);
 		}
 
 		/// <summary>Thumbnail from webP in mode slow/high quality</summary>
@@ -206,57 +165,7 @@ namespace WebPWrapper
 		/// <returns>Bitmap with the WebP thumbnail</returns>
 		public Bitmap GetThumbnailQuality(byte[] rawWebP, short width, short height)
 		{
-			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
-			Bitmap pixelMap = null;
-			BitmapData bmpData = null;
-
-			try {
-				WebPDecoderConfig config = new WebPDecoderConfig();
-				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0)
-					throw new Exception("WebPInitDecoderConfig failed. Wrong version?");
-
-				IntPtr ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
-				VP8StatusCode result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref config.input);
-				if (result != VP8StatusCode.VP8_STATUS_OK)
-					throw new Exception("Failed WebPGetFeatures with error " + result);
-
-				// Set up decode options
-				config.options.bypass_filtering = 0;
-				config.options.no_fancy_upsampling = 0;
-				config.options.use_threads = 1;
-				config.options.use_scaling = 1;
-				config.options.scaled_width = width;
-				config.options.scaled_height = height;
-
-				//Create a BitmapData and Lock all pixels to be written
-				if (config.input.Has_alpha == 1) {
-					config.output.colorspace = WEBP_CSP_MODE.MODE_bgrA;
-					pixelMap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-				} else {
-					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
-					pixelMap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-				}
-				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
-
-				// Specify the output format
-				config.output.u.RGBA.rgba = bmpData.Scan0;
-				config.output.u.RGBA.stride = bmpData.Stride;
-				config.output.u.RGBA.size = (UIntPtr)(height * bmpData.Stride);
-				config.output.height = height;
-				config.output.width = width;
-				config.output.is_external_memory = 1;
-
-				// Decode
-				result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
-				if (result != VP8StatusCode.VP8_STATUS_OK)
-					throw new Exception("Failed WebPDecode with error " + result);
-
-				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
-
-				return pixelMap;
-			} finally {
-				UnlockPin(pixelMap, bmpData, pinnedWebP);
-			}
+			return GetThumbnail(rawWebP, width, height, true);
 		}
 		#endregion
 
@@ -988,6 +897,64 @@ namespace WebPWrapper
 				return pixelMap;
 			} finally {
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
+			}
+		}
+
+		private static Bitmap GetThumbnail(byte[] rawWebP, short width, short height, bool fancy)
+		{
+			var           pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
+			Bitmap        pixelMap   = null;
+			BitmapData    bmpData    = null;
+			var           config     = new WebPDecoderConfig();
+			VP8StatusCode result;
+
+			try {
+				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0) {
+					throw new Exception("WebPInitDecoderConfig failed. Wrong version?");
+				}
+
+				IntPtr ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
+				if (fancy) {
+					result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref config.input);
+					if (result != VP8StatusCode.VP8_STATUS_OK) {
+						throw new ExternalException("Failed WebPGetFeatures with error " + result, (int)result);
+					}
+				}
+
+				// Set up decode options
+				config.options.bypass_filtering    = fancy ? 0 : 1;
+				config.options.no_fancy_upsampling = fancy ? 0 : 1;
+				config.options.use_threads         = 1;
+				config.options.use_scaling         = 1;
+				config.options.scaled_width        = width;
+				config.options.scaled_height       = height;
+
+				//Create a BitmapData and Lock all pixels to be written
+				bool blnAlpha = fancy && (config.input.Has_alpha == 1);
+				config.output.colorspace = blnAlpha ? WEBP_CSP_MODE.MODE_bgrA : WEBP_CSP_MODE.MODE_BGR;
+				pixelMap = new Bitmap(width, height, blnAlpha ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
+				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
+
+				// Specify the output format
+				if (!fancy) {
+					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
+				}
+				config.output.u.RGBA.rgba        = bmpData.Scan0;
+				config.output.u.RGBA.stride      = bmpData.Stride;
+				config.output.u.RGBA.size        = (UIntPtr)(height * bmpData.Stride);
+				config.output.height             = height;
+				config.output.width              = width;
+				config.output.is_external_memory = 1;
+
+				// Decode
+				result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
+				if (result != VP8StatusCode.VP8_STATUS_OK) {
+					throw new ExternalException("Failed WebPDecode with error " + result, (int)result);
+				}
+				return pixelMap;
+			} finally {
+				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
+				UnlockPin(pixelMap, bmpData, pinnedWebP);
 			}
 		}
 		#endregion
