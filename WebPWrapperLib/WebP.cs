@@ -42,7 +42,7 @@ namespace WebPWrapper
 		/// <summary>Read a WebP file</summary>
 		/// <param name="pathFileName">WebP file to load</param>
 		/// <returns>Bitmap with the WebP image</returns>
-		public Bitmap Load(string pathFileName)
+		public static Bitmap Load(string pathFileName)
 		{
 			return Decode(File.ReadAllBytes(pathFileName));
 		}
@@ -50,7 +50,7 @@ namespace WebPWrapper
 		/// <summary>Decode a WebP image</summary>
 		/// <param name="rawWebP">The data to uncompress</param>
 		/// <returns>Bitmap with the WebP image</returns>
-		public Bitmap Decode(byte[] rawWebP)
+		public static Bitmap Decode(byte[] rawWebP)
 		{
 			Bitmap pixelMap = null;
 			BitmapData bmpData = null;
@@ -84,7 +84,7 @@ namespace WebPWrapper
 		/// <param name="rawWebP">the data to uncompress</param>
 		/// <param name="options">Options for advanced decode</param>
 		/// <returns>Bitmap with the WebP image</returns>
-		public Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options)
+		public static Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options)
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 			Bitmap pixelMap = null;
@@ -154,7 +154,7 @@ namespace WebPWrapper
 		/// <param name="width">Wanted width of thumbnail</param>
 		/// <param name="height">Wanted height of thumbnail</param>
 		/// <returns>Bitmap with the WebP thumbnail in 24bpp</returns>
-		public Bitmap GetThumbnailFast(byte[] rawWebP, short width, short height)
+		public static Bitmap GetThumbnailFast(byte[] rawWebP, short width, short height)
 		{
 			return GetThumbnail(rawWebP, width, height, false);
 		}
@@ -164,7 +164,7 @@ namespace WebPWrapper
 		/// <param name="width">Wanted width of thumbnail</param>
 		/// <param name="height">Wanted height of thumbnail</param>
 		/// <returns>Bitmap with the WebP thumbnail</returns>
-		public Bitmap GetThumbnailQuality(byte[] rawWebP, short width, short height)
+		public static Bitmap GetThumbnailQuality(byte[] rawWebP, short width, short height)
 		{
 			return GetThumbnail(rawWebP, width, height, true);
 		}
@@ -175,7 +175,7 @@ namespace WebPWrapper
 		/// <param name="pixelMap">Bitmap with the WebP image</param>
 		/// <param name="pathFileName">The file to write</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
-		public void Save(Bitmap pixelMap, string pathFileName, byte quality = 75)
+		public static void Save(Bitmap pixelMap, string pathFileName, byte quality = 75)
 		{
 			//Encode in webP format and Write webP file
 			File.WriteAllBytes(pathFileName, EncodeLossy(pixelMap, quality));
@@ -185,7 +185,7 @@ namespace WebPWrapper
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossy(Bitmap pixelMap, byte quality = 75)
+		public static byte[] EncodeLossy(Bitmap pixelMap, byte quality = 75)
 		{
 			return CoreEncode(pixelMap, quality);
 		}
@@ -213,7 +213,7 @@ namespace WebPWrapper
 		/// <summary>Lossless encoding bitmap to WebP (Simple encoding API)</summary>
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossless(Bitmap pixelMap)
+		public static byte[] EncodeLossless(Bitmap pixelMap)
 		{
 			return CoreEncode(pixelMap, null);
 		}
@@ -315,9 +315,9 @@ namespace WebPWrapper
 		/// <param name="pathFileName">Animated WebP file to load</param>
 		/// <returns>Bitmaps of the Animated WebP frames</returns>
 #if NET46 || NETCOREAPP
-		public IReadOnlyList<Frame<Bitmap>> AnimLoad(string pathFileName)
+		public static IReadOnlyList<Frame<Bitmap>> AnimLoad(string pathFileName)
 #else
-		public IEnumerable<Frame<Bitmap>> AnimLoad(string pathFileName)
+		public static IEnumerable<Frame<Bitmap>> AnimLoad(string pathFileName)
 #endif
 		{
 			return AnimDecode(File.ReadAllBytes(pathFileName));
@@ -329,9 +329,9 @@ namespace WebPWrapper
 		/// <param name="endFrameIdx">OPTIONAL end index (excluding) for last frame up until that, frames should be returned</param>
 		/// <returns>List of FrameData - each containing frame bitmap and duration</returns>
 #if NET46 || NETCOREAPP
-		public IReadOnlyList<Frame<Bitmap>> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
+		public static IReadOnlyList<Frame<Bitmap>> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
 #else
-		public IEnumerable<Frame<Bitmap>> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
+		public static IEnumerable<Frame<Bitmap>> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
 #endif
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
@@ -457,7 +457,7 @@ namespace WebPWrapper
 		#region | Another Public Functions |
 		/// <summary>Get the libwebp version</summary>
 		/// <returns>Version of library</returns>
-		public Version GetVersion()
+		public static Version GetVersion()
 		{
 			var v = UnsafeNativeMethods.WebPGetDecoderVersion();
 			return new Version((v >> 16) % 256, (v >> 8) % 256, v % 256);
@@ -465,7 +465,7 @@ namespace WebPWrapper
 
 		/// <summary>Get info of WEBP data</summary>
 		/// <param name="rawWebP">The data of WebP</param>
-		public WebPInfo GetInfo(byte[] rawWebP)
+		public static WebPInfo GetInfo(byte[] rawWebP)
 		{
 			var features = new WebPBitstreamFeatures();
 			var pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
@@ -501,7 +501,7 @@ namespace WebPWrapper
 		/// <param name="reference">Reference picture</param>
 		/// <param name="metricType">0 = PSNR, 1 = SSIM, 2 = LSIM</param>
 		/// <returns>dB in the Y/U/V/Alpha/All order</returns>
-		public float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistortionMetric metricType)
+		public static float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistortionMetric metricType)
 		{
 			WebPPicture wpicSource = new WebPPicture();
 			WebPPicture wpicReference = new WebPPicture();

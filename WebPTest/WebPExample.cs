@@ -21,13 +21,9 @@ namespace WebPTest
 		private void WebPExample_Load(object sender, EventArgs e)
 		{
 			try {
-				//Inform of execution mode
-				this.Text = Application.ProductName + (IntPtr.Size == 8 ? " x64 v" : " x86 v") + Application.ProductVersion;
-
-				//Inform of libWebP version
-				using (WebP webp = new WebP()) {
-					this.Text += " (libwebp v" + webp.GetVersion() + ")";
-				}
+				//Inform of execution mode and libWebP version
+				this.Text = Application.ProductName + (IntPtr.Size == 8 ? " x64 v" : " x86 v") + Application.ProductVersion +
+				 " (libwebp v" + WebP.GetVersion() + ")";
 			} catch (Exception ex) {
 				MessageBox.Show(ex.Message + "\r\nIn WebPExample.WebPExample_Load", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
@@ -50,18 +46,16 @@ namespace WebPTest
 						string pathFileName = openFileDialog.FileName;
 
 						if (Path.GetExtension(pathFileName) == ".webp") {
-							using (WebP webp = new WebP()) {
-								byte[] bytes = File.ReadAllBytes(pathFileName);
-								var info = webp.GetInfo(bytes);
-								if (!info.IsAnimated) {
-									pictureBox.Image = webp.Decode(bytes);
-								} else {
-									var frames = webp.AnimDecode(bytes, 0, 1);
-									var enumerator = frames.GetEnumerator();
-									enumerator.MoveNext();
-									pictureBox.Image = enumerator.Current.Data;
-									enumerator.Dispose();
-								}
+							byte[] bytes = File.ReadAllBytes(pathFileName);
+							var info = WebP.GetInfo(bytes);
+							if (!info.IsAnimated) {
+								pictureBox.Image = WebP.Decode(bytes);
+							} else {
+								var frames     = WebP.AnimDecode(bytes, 0, 1);
+								var enumerator = frames.GetEnumerator();
+								enumerator.MoveNext();
+								pictureBox.Image = enumerator.Current.Data;
+								enumerator.Dispose();
 							}
 						} else {
 							pictureBox.Image = Image.FromFile(pathFileName);
@@ -83,12 +77,7 @@ namespace WebPTest
 					openFileDialog.Filter = "WebP files (*.webp)|*.webp";
 					openFileDialog.FileName = "";
 					if (openFileDialog.ShowDialog() == DialogResult.OK) {
-						string pathFileName = openFileDialog.FileName;
-
-						byte[] rawWebP = File.ReadAllBytes(pathFileName);
-						using (WebP webp = new WebP()) {
-							this.pictureBox.Image = webp.GetThumbnailQuality(rawWebP, 200, 150);
-						}
+						this.pictureBox.Image = WebP.GetThumbnailQuality(File.ReadAllBytes(openFileDialog.FileName), 200, 150);
 					}
 				}
 			} catch (Exception ex) {
@@ -119,9 +108,7 @@ namespace WebPTest
 							use_threads = 1,            //Use multi-threading
 							flip = 1                    //Flip the image
 						};
-						using (WebP webp = new WebP()) {
-							this.pictureBox.Image = webp.Decode(rawWebP, decoderOptions);
-						}
+						this.pictureBox.Image = WebP.Decode(rawWebP, decoderOptions);
 					}
 				}
 			} catch (Exception ex) {
@@ -147,17 +134,13 @@ namespace WebPTest
 
 				//Test simple encode in lossy mode in memory with quality 75
 				string lossyFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SimpleLossy.webp");
-				using (WebP webp = new WebP()) {
-					rawWebP = webp.EncodeLossy(bmp, 75);
-				}
+				rawWebP = WebP.EncodeLossy(bmp, 75);
 				File.WriteAllBytes(lossyFileName, rawWebP);
 				MessageBox.Show("Made " + lossyFileName, "Simple lossy");
 
 				//Test simple encode in lossless mode in memory
 				string simpleLosslessFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SimpleLossless.webp");
-				using (WebP webp = new WebP()) {
-					rawWebP = webp.EncodeLossless(bmp);
-				}
+				rawWebP = WebP.EncodeLossless(bmp);
 				File.WriteAllBytes(simpleLosslessFileName, rawWebP);
 				MessageBox.Show("Made " + simpleLosslessFileName, "Simple lossless");
 
@@ -211,27 +194,21 @@ namespace WebPTest
 					openFileDialog.Filter = "WebP images (*.webp)|*.webp";
 					openFileDialog.FileName = "";
 					if (openFileDialog.ShowDialog() == DialogResult.OK) {
-						Bitmap source;
-						Bitmap reference;
-						float[] result;
-
 						//Load Bitmaps
-						source = (Bitmap)this.pictureBox.Image;
-						using (WebP webp = new WebP()) {
-							reference = webp.Load(openFileDialog.FileName);
+						var source = (Bitmap)this.pictureBox.Image;
+						var reference = WebP.Load(openFileDialog.FileName);
 
-							//Measure PSNR
-							result = webp.GetPictureDistortion(source, reference, DistortionMetric.PeakSignalNoiseRatio);
-							MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "PSNR");
+						//Measure PSNR
+						var result = WebP.GetPictureDistortion(source, reference, DistortionMetric.PeakSignalNoiseRatio);
+						MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "PSNR");
 
-							//Measure SSIM
-							result = webp.GetPictureDistortion(source, reference, DistortionMetric.StructuralSimilarity);
-							MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "SSIM");
+						//Measure SSIM
+						result = WebP.GetPictureDistortion(source, reference, DistortionMetric.StructuralSimilarity);
+						MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "SSIM");
 
-							//Measure LSIM
-							result = webp.GetPictureDistortion(source, reference, DistortionMetric.LightweightSimilarity);
-							MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "LSIM");
-						}
+						//Measure LSIM
+						result = WebP.GetPictureDistortion(source, reference, DistortionMetric.LightweightSimilarity);
+						MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "LSIM");
 					}
 				}
 			} catch (Exception ex) {
@@ -250,11 +227,7 @@ namespace WebPTest
 					openFileDialog.Filter = "WebP images (*.webp)|*.webp";
 					openFileDialog.FileName = "";
 					if (openFileDialog.ShowDialog() == DialogResult.OK) {
-						WebPInfo info;
-						using (WebP webp = new WebP()) {
-							info = webp.GetInfo(File.ReadAllBytes(openFileDialog.FileName));
-						}
-
+						var info = WebP.GetInfo(File.ReadAllBytes(openFileDialog.FileName));
 						MessageBox.Show("Width: " + info.Width + nl +
 										"Height: " + info.Height + nl +
 										"Has alpha: " + info.HasAlpha + nl +
