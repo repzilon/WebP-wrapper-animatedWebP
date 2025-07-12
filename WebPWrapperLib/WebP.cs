@@ -761,44 +761,9 @@ namespace WebPWrapper
 					throw new ArgumentException("Source and Reference pictures have different dimensions");
 				}
 
-				// Setup the source picture data, allocating the bitmap, width and height
-				sourceBmpData = LockAllBits(source, ImageLockMode.ReadOnly);
-				wpicSource = new WebPPicture();
-				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpicSource) != 1)
-					throw new Exception("Can´t initialize WebPPictureInit");
-				wpicSource.width = (int)source.Width;
-				wpicSource.height = (int)source.Height;
+				SetupPictureForComparison(source, out sourceBmpData, out wpicSource);
 
-				//Put the source bitmap componets in wpic
-				if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb) {
-					wpicSource.use_argb = 1;
-					if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
-						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-				} else {
-					wpicSource.use_argb = 0;
-					if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
-						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-				}
-
-				// Setup the reference picture data, allocating the bitmap, width and height
-				referenceBmpData = LockAllBits(reference, ImageLockMode.ReadOnly);
-				wpicReference = new WebPPicture();
-				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpicReference) != 1)
-					throw new Exception("Can´t initialize WebPPictureInit");
-				wpicReference.width = (int)reference.Width;
-				wpicReference.height = (int)reference.Height;
-				wpicReference.use_argb = 1;
-
-				//Put the source bitmap contents in WebPPicture instance
-				if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb) {
-					wpicSource.use_argb = 1;
-					if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpicReference, referenceBmpData.Scan0, referenceBmpData.Stride) != 1)
-						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-				} else {
-					wpicSource.use_argb = 0;
-					if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpicReference, referenceBmpData.Scan0, referenceBmpData.Stride) != 1)
-						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-				}
+				SetupPictureForComparison(reference, out referenceBmpData, out wpicReference);
 
 				//Measure
 				IntPtr ptrResult = pinnedResult.AddrOfPinnedObject();
@@ -1002,6 +967,28 @@ namespace WebPWrapper
 		private static BitmapData LockAllBits(Bitmap toLock, ImageLockMode mode)
 		{
 			return toLock.LockBits(new Rectangle(0, 0, toLock.Width, toLock.Height), mode, toLock.PixelFormat);
+		}
+
+		private static void SetupPictureForComparison(Bitmap source, out BitmapData sourceBmpData, out WebPPicture wpicSource)
+		{
+			// Set up the source picture data, allocating the bitmap, width and height
+			sourceBmpData = LockAllBits(source, ImageLockMode.ReadOnly);
+			wpicSource    = new WebPPicture();
+			if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpicSource) != 1)
+				throw new Exception("Can´t initialize WebPPictureInit");
+			wpicSource.width  = source.Width;
+			wpicSource.height = source.Height;
+
+			//Put the source bitmap components in wpic
+			if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb) {
+				wpicSource.use_argb = 1;
+				if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
+					throw new Exception("Can´t allocate memory in WebPPictureImportBGRA");
+			} else {
+				wpicSource.use_argb = 0;
+				if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
+					throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
+			}
 		}
 		#endregion
 
