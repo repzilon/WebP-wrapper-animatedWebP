@@ -12,9 +12,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <NoWarn>NETSDK1138;NU1902;NU1903</NoWarn>
 	<DebugType>portable</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DocumentationFile>WebPWrapperLib.xml</DocumentationFile>
+	<GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="x64\libsharpyuv.dll">

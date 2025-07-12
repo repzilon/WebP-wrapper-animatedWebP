@@ -12,9 +12,7 @@
     <RootNamespace>WebPWrapper</RootNamespace>
     <NoWarn>NETSDK1138;NU1902;NU1903</NoWarn>
     <UseWindowsForms>true</UseWindowsForms>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DocumentationFile>WebPWrapper.xml</DocumentationFile>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="libwebp_x64.dll">
