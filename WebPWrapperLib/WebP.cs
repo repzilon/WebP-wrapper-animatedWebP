@@ -102,8 +102,9 @@ namespace WebPWrapper
 #endif
 				if (options.use_scaling == 0) {
 					result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref config.input);
-					if (result != VP8StatusCode.VP8_STATUS_OK)
-						throw new Exception("Failed WebPGetFeatures with error " + result);
+					if (result != VP8StatusCode.VP8_STATUS_OK) {
+						throw new ExternalException("Failed WebPGetFeatures with error " + result, (int)result);
+					}
 
 					//Test cropping values
 					if (options.use_cropping == 1) {
@@ -260,7 +261,7 @@ namespace WebPWrapper
 				data = webpPtr
 			};
 			var err = UnsafeNativeMethods.WebPMuxSetImage(mux, ref webpData, 0);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception("Error: " + err);
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new ExternalException("Error in WebPMuxSetImage: " + err, (int)err);
 
 			var pinnedRawMeta = GCHandle.Alloc(rawXmp, GCHandleType.Pinned);
 			IntPtr metaPtr = pinnedRawMeta.AddrOfPinnedObject();
@@ -270,11 +271,11 @@ namespace WebPWrapper
 				data = metaPtr
 			};
 			err = UnsafeNativeMethods.WebPMuxSetChunk(mux, "XMP ", ref metaWebData, 0);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception("Error: " + err);
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new ExternalException("Error in WebPMuxSetChunk: " + err, (int)err);
 
 			var outputData = new WebPData();
 			err = UnsafeNativeMethods.WebPMuxAssemble(mux, ref outputData);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception("Error: " + err);
+			if (err != WebPMuxError.WEBP_MUX_OK) throw new ExternalException("Error in WebPMuxAssemble: " + err, (int)err);
 
 			int size = Convert.ToInt32(outputData.size);
 			var rawOutput = new byte[size];
@@ -666,7 +667,7 @@ namespace WebPWrapper
 
 				//compress the input samples
 				if (UnsafeNativeMethods.WebPEncode(ref config, ref wpic) != 1)
-					throw new Exception("Encoding error: " + ((WebPEncodingError)wpic.error_code).ToString());
+					throw new ExternalException("Encoding error: " + (WebPEncodingError)wpic.error_code, (int)wpic.error_code);
 
 				//Remove OnCallback
 				_myWriterDelegate = null;
