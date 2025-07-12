@@ -5,7 +5,7 @@ namespace WebPWrapper
 {
 	/// <summary>Structure for storing auxiliary statistics (mostly for lossy encoding)</summary>
 	[StructLayout(LayoutKind.Sequential)]
-	internal struct WebPAuxStats
+	public struct WebPAuxStats
 	{
 		/// <summary>Final size</summary>
 		public int coded_size;

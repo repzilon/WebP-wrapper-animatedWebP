@@ -163,9 +163,11 @@ namespace WebPTest
 
 				//Test encode in lossy mode in memory with quality 75 and speed 9
 				string advanceLossyFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AdvanceLossy.webp");
+				WebPAuxStats stats;
 				using (WebP webp = new WebP()) {
-					rawWebP = webp.EncodeLossy(bmp, 71, 9, true);
+					rawWebP = webp.EncodeLossy(bmp, 71, 9, out stats);
 				}
+				ShowCompressionStatistics(stats, bmp);
 				File.WriteAllBytes(advanceLossyFileName, rawWebP);
 				MessageBox.Show("Made " + advanceLossyFileName, "Advance lossy");
 
@@ -266,5 +268,32 @@ namespace WebPTest
 			}
 		}
 		#endregion
+
+		private static void ShowCompressionStatistics(WebPAuxStats stats, Bitmap gdiPlusImage)
+		{
+			MessageBox.Show("Dimensions: " + gdiPlusImage.Width + " x " + gdiPlusImage.Height + " pixels\n" +
+							"Output:    " + stats.coded_size + " bytes\n" +
+							"PSNR Y:    " + stats.PSNRY + " db\n" +
+							"PSNR u:    " + stats.PSNRU + " db\n" +
+							"PSNR v:    " + stats.PSNRV + " db\n" +
+							"PSNR ALL:  " + stats.PSNRALL + " db\n" +
+							"Block intra4:  " + stats.block_count_intra4 + "\n" +
+							"Block intra16: " + stats.block_count_intra16 + "\n" +
+							"Block skipped: " + stats.block_count_skipped + "\n" +
+							"Header size:    " + stats.header_bytes + " bytes\n" +
+							"Mode-partition: " + stats.mode_partition_0 + " bytes\n" +
+							"Macro-blocks 0: " + stats.segment_size_segments0 + " residuals bytes\n" +
+							"Macro-blocks 1: " + stats.segment_size_segments1 + " residuals bytes\n" +
+							"Macro-blocks 2: " + stats.segment_size_segments2 + " residuals bytes\n" +
+							"Macro-blocks 3: " + stats.segment_size_segments3 + " residuals bytes\n" +
+							"Quantizer    0: " + stats.segment_quant_segments0 + " residuals bytes\n" +
+							"Quantizer    1: " + stats.segment_quant_segments1 + " residuals bytes\n" +
+							"Quantizer    2: " + stats.segment_quant_segments2 + " residuals bytes\n" +
+							"Quantizer    3: " + stats.segment_quant_segments3 + " residuals bytes\n" +
+							"Filter level 0: " + stats.segment_level_segments0 + " residuals bytes\n" +
+							"Filter level 1: " + stats.segment_level_segments1 + " residuals bytes\n" +
+							"Filter level 2: " + stats.segment_level_segments2 + " residuals bytes\n" +
+							"Filter level 3: " + stats.segment_level_segments3 + " residuals bytes\n", "Compression statistics");
+		}
 	}
 }

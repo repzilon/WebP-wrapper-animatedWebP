@@ -27,7 +27,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -193,11 +192,20 @@ namespace WebPWrapper
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
+		/// <param name="info">Compression statistics</param>
 		/// <returns>Compressed data</returns>
-		public byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed, bool info = false)
+		public byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed, out WebPAuxStats info)
 		{
+			info = new WebPAuxStats();
 			return this.AdvancedEncode(pixelMap,
-				InitEncodeConfig(EncodingMode.Lossy, quality, speed), info);
+				InitEncodeConfig(EncodingMode.Lossy, quality, speed), true, ref info);
+		}
+
+		public byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed)
+		{
+			var dummy = new WebPAuxStats();
+			return this.AdvancedEncode(pixelMap,
+				InitEncodeConfig(EncodingMode.Lossy, quality, speed), false, ref dummy);
 		}
 
 		/// <summary>Lossless encoding bitmap to WebP (Simple encoding API)</summary>
@@ -214,8 +222,9 @@ namespace WebPWrapper
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossless(Bitmap pixelMap, byte speed)
 		{
+			var dummy = new WebPAuxStats();
 			return this.AdvancedEncode(pixelMap,
-				InitEncodeConfig(EncodingMode.Lossless, (byte)((speed + 1) * 10), speed), false);
+				InitEncodeConfig(EncodingMode.Lossless, (byte)((speed + 1) * 10), speed), false, ref dummy);
 		}
 
 		/// <summary>Near lossless encoding image in bitmap</summary>
@@ -225,8 +234,9 @@ namespace WebPWrapper
 		/// <returns>Compress data</returns>
 		public byte[] EncodeNearLossless(Bitmap pixelMap, byte quality, byte speed = 9)
 		{
+			var dummy = new WebPAuxStats();
 			return this.AdvancedEncode(pixelMap,
-				InitEncodeConfig(EncodingMode.NearLossless, quality, speed), false);
+				InitEncodeConfig(EncodingMode.NearLossless, quality, speed), false, ref dummy);
 		}
 
 		public void EncodeWithMeta(Bitmap pixelMap, string path, byte[] rawXmp,
@@ -238,8 +248,8 @@ namespace WebPWrapper
 			config.thread_level  = multithread ? 1 : 0;
 			config.alpha_quality = alphaQuality;
 
-			var rawWebP = AdvancedEncode(pixelMap, config, false);
-			WebPMuxError err;
+			var dummy = new WebPAuxStats();
+			var rawWebP = AdvancedEncode(pixelMap, config, false, ref dummy);
 
 			// TODO: directly use Ptr from AdvancedEncode instead of managed<>unmanaged back and forth
 			var pinnedRawWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
@@ -249,7 +259,7 @@ namespace WebPWrapper
 				size = Convert.ToUInt64(rawWebP.Length),
 				data = webpPtr
 			};
-			err = UnsafeNativeMethods.WebPMuxSetImage(mux, ref webpData, 0);
+			var err = UnsafeNativeMethods.WebPMuxSetImage(mux, ref webpData, 0);
 			if (err != WebPMuxError.WEBP_MUX_OK) throw new Exception("Error: " + err);
 
 			var pinnedRawMeta = GCHandle.Alloc(rawXmp, GCHandleType.Pinned);
@@ -539,7 +549,7 @@ namespace WebPWrapper
 #if UNSAFE
 		unsafe
 #endif
-		private byte[] AdvancedEncode(Bitmap pixelMap, WebPConfig config, bool info)
+		private byte[] AdvancedEncode(Bitmap pixelMap, WebPConfig config, bool info, ref WebPAuxStats stats)
 		{
 #if UNSAFE
 			IntPtr dataWebpPtr = IntPtr.Zero;
@@ -548,7 +558,6 @@ namespace WebPWrapper
 #endif
 			WebPPicture wpic = new WebPPicture();
 			BitmapData bmpData = null;
-			WebPAuxStats stats = new WebPAuxStats();
 			IntPtr ptrStats = IntPtr.Zero;
 #if !UNSAFE
 			GCHandle pinnedArrayHandle = new GCHandle();
@@ -626,30 +635,6 @@ namespace WebPWrapper
 				//Show statistics
 				if (info) {
 					stats = (WebPAuxStats)Marshal.PtrToStructure(ptrStats, typeof(WebPAuxStats));
-					//MessageBox.Show(
-					Debug.Print("Dimension: " + wpic.width + " x " + wpic.height + " pixels\n" +
-								"Output:    " + stats.coded_size + " bytes\n" +
-								"PSNR Y:    " + stats.PSNRY + " db\n" +
-								"PSNR u:    " + stats.PSNRU + " db\n" +
-								"PSNR v:    " + stats.PSNRV + " db\n" +
-								"PSNR ALL:  " + stats.PSNRALL + " db\n" +
-								"Block intra4:  " + stats.block_count_intra4 + "\n" +
-								"Block intra16: " + stats.block_count_intra16 + "\n" +
-								"Block skipped: " + stats.block_count_skipped + "\n" +
-								"Header size:    " + stats.header_bytes + " bytes\n" +
-								"Mode-partition: " + stats.mode_partition_0 + " bytes\n" +
-								"Macro-blocks 0: " + stats.segment_size_segments0 + " residuals bytes\n" +
-								"Macro-blocks 1: " + stats.segment_size_segments1 + " residuals bytes\n" +
-								"Macro-blocks 2: " + stats.segment_size_segments2 + " residuals bytes\n" +
-								"Macro-blocks 3: " + stats.segment_size_segments3 + " residuals bytes\n" +
-								"Quantizer    0: " + stats.segment_quant_segments0 + " residuals bytes\n" +
-								"Quantizer    1: " + stats.segment_quant_segments1 + " residuals bytes\n" +
-								"Quantizer    2: " + stats.segment_quant_segments2 + " residuals bytes\n" +
-								"Quantizer    3: " + stats.segment_quant_segments3 + " residuals bytes\n" +
-								"Filter level 0: " + stats.segment_level_segments0 + " residuals bytes\n" +
-								"Filter level 1: " + stats.segment_level_segments1 + " residuals bytes\n" +
-								"Filter level 2: " + stats.segment_level_segments2 + " residuals bytes\n" +
-								"Filter level 3: " + stats.segment_level_segments3 + " residuals bytes\n", "Compression statistics");
 				}
 				return rawWebP;
 			} finally {
