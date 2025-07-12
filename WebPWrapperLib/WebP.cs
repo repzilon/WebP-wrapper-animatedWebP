@@ -541,7 +541,6 @@ namespace WebPWrapper
 #endif
 		private byte[] AdvancedEncode(Bitmap pixelMap, WebPConfig config, bool info)
 		{
-			byte[] rawWebP = null;
 #if UNSAFE
 			IntPtr dataWebpPtr = IntPtr.Zero;
 #else
@@ -554,7 +553,6 @@ namespace WebPWrapper
 #if !UNSAFE
 			GCHandle pinnedArrayHandle = new GCHandle();
 #endif
-			int dataWebpSize;
 			try {
 				//Validate the configuration
 				if (UnsafeNativeMethods.WebPValidateConfig(ref config) != 1)
@@ -564,20 +562,20 @@ namespace WebPWrapper
 				TestPixelMapBeforeEncode(pixelMap, out w, out h);
 
 				// Set up the input data, allocating the bitmap, width and height
-				dataWebpSize = ImportColorData(pixelMap, true, out bmpData, ref wpic);
+				ImportColorData(pixelMap, true, out bmpData, ref wpic);
 
 				//Set up statistics of compression
 				if (info) {
-					stats = new WebPAuxStats();
 					ptrStats = Marshal.AllocHGlobal(Marshal.SizeOf(stats));
 					Marshal.StructureToPtr(stats, ptrStats, false);
 					wpic.stats = ptrStats;
 				}
 
+				var dataWebpSize = Math.Max(1024, checked(pixelMap.Width * pixelMap.Height * 2));
 #if UNSAFE
 				//Memory for WebP output
-				dataWebpPtr = Marshal.AllocHGlobal(dataWebpSize); // TODO: shouldn't we allocate less? how to know?
-                var initPtr = (byte*)dataWebpPtr.ToPointer();
+				dataWebpPtr = Marshal.AllocHGlobal(dataWebpSize);
+				var initPtr = (byte*)dataWebpPtr.ToPointer();
 #else
 				dataWebp = new byte[dataWebpSize];
 				pinnedArrayHandle = GCHandle.Alloc(dataWebp, GCHandleType.Pinned);
@@ -601,23 +599,28 @@ namespace WebPWrapper
 				bmpData = null;
 
 				//Copy webpData to rawWebP
+				int size    = checked((int)((long)wpic.custom_ptr - (long)initPtr));
+				var rawWebP = new byte[size];
+#if DEBUG
+				int le = dataWebp.Length;
+				if ((le > 4096) && (le > (size * 5))) {
+					Console.Error.WriteLine("Buffer overallocation for dataWebp: needed {0:n0} allocated {1:n0}", size, le);
+				} else if (le < size) {
+					Console.Error.WriteLine("Buffer under allocation for dataWebp: needed {0:n0} allocated {1:n0} for {2}x{3}", size, le, pixelMap.Width, pixelMap.Height);
+				}
+#endif
 #if UNSAFE
-                var size = (int)(wpic.custom_ptr - initPtr);
-				rawWebP = new byte[size];
 				Marshal.Copy(dataWebpPtr, rawWebP, 0, size); // TODO: directly pass unmanaged pointer to metadata encode
 #else
-				int size = (int)((long)wpic.custom_ptr - (long)initPtr);
-				rawWebP = new byte[size];
 				Array.Copy(dataWebp, rawWebP, size);
 #endif
 
 				//Remove compression data
 #if UNSAFE
 				Marshal.FreeHGlobal(dataWebpPtr);
-                dataWebpPtr = IntPtr.Zero;
+				dataWebpPtr = IntPtr.Zero;
 #else
 				pinnedArrayHandle.Free();
-				dataWebp = null;
 #endif
 
 				//Show statistics
@@ -669,8 +672,8 @@ namespace WebPWrapper
 		unsafe private int MyWriter([In] byte* data, UIntPtr data_size, ref WebPPicture picture)
 		{
 			var size = (long)data_size;
-            Buffer.MemoryCopy(data, picture.custom_ptr, size, size);
-            picture.custom_ptr += size;
+			Buffer.MemoryCopy(data, picture.custom_ptr, size, size);
+			picture.custom_ptr += size;
 		}
 #else
 		private int MyWriter([In] IntPtr data, UIntPtr data_size, ref WebPPicture picture)
@@ -692,7 +695,7 @@ namespace WebPWrapper
 			return toLock.LockBits(new Rectangle(0, 0, toLock.Width, toLock.Height), mode, toLock.PixelFormat);
 		}
 
-		private static int ImportColorData(Bitmap source, bool forceArgb, out BitmapData bmpData, ref WebPPicture wpic)
+		private static void ImportColorData(Bitmap source, bool forceArgb, out BitmapData bmpData, ref WebPPicture wpic)
 		{
 			// Set up the source picture data, allocating the bitmap, width and height
 			bmpData = LockAllBits(source, ImageLockMode.ReadOnly);
@@ -707,25 +710,15 @@ namespace WebPWrapper
 			//Put the source bitmap components in wpic
 			if (bmpData.PixelFormat == PixelFormat.Format32bppArgb) {
 				if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpic, bmpData.Scan0, bmpData.Stride) != 1) {
-					throw new Exception("Can´t allocate memory in WebPPictureImportBGRA");
+					throw new InsufficientMemoryException("Can´t allocate memory in WebPPictureImportBGRA");
 				}
 				if (forceArgb) {
 					wpic.colorspace = (uint)WEBP_CSP_MODE.MODE_bgrA; // do we need that?
 				}
-				return BufferSize(source, 32); // do we need to reserve that much?
 			} else {
 				if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpic, bmpData.Scan0, bmpData.Stride) != 1) {
-					throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
+					throw new InsufficientMemoryException("Can´t allocate memory in WebPPictureImportBGR");
 				}
-				return BufferSize(source, 24);
-			}
-		}
-
-		private static int BufferSize(Bitmap pixelMap, byte multiplier)
-		{
-			checked {
-				long bigSize = pixelMap.Width * pixelMap.Height * multiplier;
-				return (int)Math.Min(bigSize, 2147483591);
 			}
 		}
 
