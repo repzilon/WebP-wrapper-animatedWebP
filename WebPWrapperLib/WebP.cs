@@ -68,10 +68,11 @@ namespace WebPWrapper
 				//Uncompress the image
 				int outputSize = bmpData.Stride * info.Height;
 				IntPtr ptrData = pinnedWebP.AddrOfPinnedObject();
-				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
+				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb) {
 					UnsafeNativeMethods.WebPDecodeBGRInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
-				else
+				} else {
 					UnsafeNativeMethods.WebPDecodeBGRAInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
+				}
 
 				return pixelMap;
 			} finally {
@@ -261,7 +262,9 @@ namespace WebPWrapper
 				data = webpPtr
 			};
 			var err = UnsafeNativeMethods.WebPMuxSetImage(mux, ref webpData, 0);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new ExternalException("Error in WebPMuxSetImage: " + err, (int)err);
+			if (err != WebPMuxError.WEBP_MUX_OK) {
+				throw new ExternalException("Error in WebPMuxSetImage: " + err, (int)err);
+			}
 
 			var pinnedRawMeta = GCHandle.Alloc(rawXmp, GCHandleType.Pinned);
 			IntPtr metaPtr = pinnedRawMeta.AddrOfPinnedObject();
@@ -271,11 +274,15 @@ namespace WebPWrapper
 				data = metaPtr
 			};
 			err = UnsafeNativeMethods.WebPMuxSetChunk(mux, "XMP ", ref metaWebData, 0);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new ExternalException("Error in WebPMuxSetChunk: " + err, (int)err);
+			if (err != WebPMuxError.WEBP_MUX_OK) {
+				throw new ExternalException("Error in WebPMuxSetChunk: " + err, (int)err);
+			}
 
 			var outputData = new WebPData();
 			err = UnsafeNativeMethods.WebPMuxAssemble(mux, ref outputData);
-			if (err != WebPMuxError.WEBP_MUX_OK) throw new ExternalException("Error in WebPMuxAssemble: " + err, (int)err);
+			if (err != WebPMuxError.WEBP_MUX_OK) {
+				throw new ExternalException("Error in WebPMuxAssemble: " + err, (int)err);
+			}
 
 			int size = Convert.ToInt32(outputData.size);
 			var rawOutput = new byte[size];
@@ -428,11 +435,13 @@ namespace WebPWrapper
 		/// <returns>object with the frame's raw data</returns>
 		public FrameDataRaw AnimGetFrame(int frameNumber)
 		{
-			if (_webPAnimDecoder.decoder == IntPtr.Zero)
+			if (_webPAnimDecoder.decoder == IntPtr.Zero) {
 				throw new ApplicationException("Decoder has not been initialized.");
+			}
 
-			if (frameNumber < 1 || frameNumber > _frameCount)
+			if (frameNumber < 1 || frameNumber > _frameCount) {
 				throw new ArgumentOutOfRangeException();
+			}
 
 			WebPDemuxer webPDemuxer = UnsafeNativeMethods.WebPAnimDecoderGetDemuxer(_webPAnimDecoder);
 			WebPIterator iter;
@@ -526,8 +535,10 @@ namespace WebPWrapper
 
 				//Measure
 				IntPtr ptrResult = pinnedResult.AddrOfPinnedObject();
-				if (UnsafeNativeMethods.WebPPictureDistortion(ref wpicSource, ref wpicReference, (int)metricType, ptrResult) != 1)
+				if (UnsafeNativeMethods.WebPPictureDistortion(ref wpicSource, ref wpicReference, (int)metricType, ptrResult) != 1) {
 					throw new Exception("Can´t measure.");
+				}
+
 				return result;
 			} finally {
 				UnlockFree(source, sourceBmpData, wpicSource);
@@ -630,8 +641,9 @@ namespace WebPWrapper
 #endif
 			try {
 				//Validate the configuration
-				if (UnsafeNativeMethods.WebPValidateConfig(ref config) != 1)
+				if (UnsafeNativeMethods.WebPValidateConfig(ref config) != 1) {
 					throw new Exception("Bad configuration parameters");
+				}
 
 				short w, h;
 				TestPixelMapBeforeEncode(pixelMap, out w, out h);
@@ -663,8 +675,9 @@ namespace WebPWrapper
 				wpic.writer       = Marshal.GetFunctionPointerForDelegate(_myWriterDelegate);
 
 				//compress the input samples
-				if (UnsafeNativeMethods.WebPEncode(ref config, ref wpic) != 1)
+				if (UnsafeNativeMethods.WebPEncode(ref config, ref wpic) != 1) {
 					throw new ExternalException("Encoding error: " + (WebPEncodingError)wpic.error_code, (int)wpic.error_code);
+				}
 
 				//Remove OnCallback
 				_myWriterDelegate = null;
@@ -934,15 +947,17 @@ namespace WebPWrapper
 			if (_webPAnimDecoder.decoder != IntPtr.Zero) {
 				UnsafeNativeMethods.WebPAnimDecoderDelete(_webPAnimDecoder.decoder);
 				_webPAnimDecoder.decoder = IntPtr.Zero;
-				if (_pinnedWebP.IsAllocated)
+				if (_pinnedWebP.IsAllocated) {
 					_pinnedWebP.Free();
+				}
 			}
 		}
 
 		private void Dispose(bool disposing)
 		{
-			if (_disposed)
+			if (_disposed) {
 				return;
+			}
 
 			if (disposing) {
 				// TODO: dispose managed state (managed objects).
