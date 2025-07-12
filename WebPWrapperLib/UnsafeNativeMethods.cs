@@ -313,7 +313,7 @@ namespace WebPWrapper
 		private static void ValidatePlatform()
 		{
 			if (IntPtr.Size != 4 && IntPtr.Size != 8) {
-				throw new InvalidOperationException("Invalid platform. Can not find proper function");
+				throw new InvalidOperationException("Invalid platform. Cannot find proper function.");
 			}
 		}
 
@@ -347,13 +347,10 @@ namespace WebPWrapper
 		///     will be picked).</param>
 		/// <returns>A pointer to the newly created WebPAnimDecoder object, or NULL in case of
 		///     parsing error, invalid option or memory error.</returns>
-		internal static WebPAnimDecoder WebPAnimDecoderNew(ref WebPData webpData, ref WebPAnimDecoderOptions decOptions)
+		internal static WebPOpaque WebPAnimDecoderNew(ref WebPData webpData, ref WebPAnimDecoderOptions decOptions)
 		{
 			//ValidatePlatform();
-
-			IntPtr ptr = WebPAnimDecoderNewInternal(ref webpData, ref decOptions, WebpDemuxAbiVersion);
-			WebPAnimDecoder decoder = new WebPAnimDecoder() { decoder = ptr };
-			return decoder;
+			return new WebPOpaque { library = WebPAnimDecoderNewInternal(ref webpData, ref decOptions, WebpDemuxAbiVersion) };
 		}
 
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderNewInternal")]
@@ -446,14 +443,11 @@ namespace WebPWrapper
 		/// </summary>
 		/// <param name="dec">(in) decoder instance from which the demuxer object is to be fetched</param>
 		/// <returns></returns>
-		internal static WebPDemuxer WebPAnimDecoderGetDemuxer(WebPAnimDecoder dec)
+		internal static WebPOpaque WebPAnimDecoderGetDemuxer(WebPOpaque dec)
 		{
-			//ValidatePlatform();
-
-			IntPtr ptr = WebPAnimDecoderGetDemuxerInternal(dec.decoder);
-			WebPDemuxer demuxer = new WebPDemuxer() { demuxer = ptr };
-			return demuxer;
+			return new WebPOpaque { library = WebPAnimDecoderGetDemuxerInternal(dec.library) };
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderGetDemuxer")]
 		private static extern IntPtr WebPAnimDecoderGetDemuxerInternal(IntPtr dec);
 
@@ -469,9 +463,9 @@ namespace WebPWrapper
 		/// <param name="frame"></param>
 		/// <param name="iter"></param>
 		/// <returns>true/false - success/error</returns>
-		internal static bool WebPDemuxGetFrame(WebPDemuxer dmux, int frameNumber, out WebPIterator iter)
+		internal static bool WebPDemuxGetFrame(WebPOpaque dmux, int frameNumber, out WebPIterator iter)
 		{
-			return WebPDemuxGetFrameInternal(dmux.demuxer, frameNumber, out iter) == 1;
+			return WebPDemuxGetFrameInternal(dmux.library, frameNumber, out iter) == 1;
 		}
 
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDemuxGetFrame")]
@@ -506,10 +500,6 @@ namespace WebPWrapper
 
 		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxDelete")]
 		internal static extern void WebPMuxDelete(IntPtr mux);
-
-		// TODO: this was custom patch in libwebp but not necessary if Marshal.FreeHGlobal works too
-		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDataClearExternal")]
-		internal static extern void WebPDataClear(ref WebPData mux);
 		#endregion
 	}
 }

@@ -3,10 +3,10 @@ using System.Runtime.InteropServices;
 
 namespace WebPWrapper
 {
-	/// <summary>WebP container demux (opaque object)</summary>
+	/// <summary>WebP library opaque object</summary>
 	[StructLayout(LayoutKind.Sequential)]
-	internal struct WebPDemuxer
+	internal struct WebPOpaque
 	{
-		public IntPtr demuxer;
+		public IntPtr library;
 	}
 }

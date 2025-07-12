@@ -328,11 +328,11 @@ namespace WebPWrapper
 		public static IEnumerable<Frame<Bitmap>> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
 #endif
 		{
-			Bitmap          bitmap  = null;
-			BitmapData      bmpData = null;
-			WebPAnimDecoder dec;
-			int             idx        = 0;
-			GCHandle        pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
+			Bitmap     bitmap  = null;
+			BitmapData bmpData = null;
+			WebPOpaque dec;
+			int        idx        = 0;
+			GCHandle   pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 			try {
 				WebPAnimDecoderOptions decOptions = new WebPAnimDecoderOptions();
 				var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref decOptions);
@@ -340,16 +340,16 @@ namespace WebPWrapper
 				WebPData webpData = new WebPData(pinnedWebP.AddrOfPinnedObject(), (ulong)rawWebP.Length);
 				dec = UnsafeNativeMethods.WebPAnimDecoderNew(ref webpData, ref decOptions);
 				WebPAnimInfo anim_info = new WebPAnimInfo();
-				UnsafeNativeMethods.WebPAnimDecoderGetInfo(dec.decoder, out anim_info);
+				UnsafeNativeMethods.WebPAnimDecoderGetInfo(dec.library, out anim_info);
 				var cw           = (int)anim_info.canvas_width;
 				var ch           = (int)anim_info.canvas_height;
 				var rect         = new Rectangle(0, 0, cw, ch);
 				var frames       = new List<Frame<Bitmap>>();
 				int oldTimestamp = 0;
-				while (UnsafeNativeMethods.WebPAnimDecoderHasMoreFrames(dec.decoder)) {
+				while (UnsafeNativeMethods.WebPAnimDecoderHasMoreFrames(dec.library)) {
 					var buf       = IntPtr.Zero;
 					int timestamp = 0;
-					var result2   = UnsafeNativeMethods.WebPAnimDecoderGetNext(dec.decoder, ref buf, ref timestamp);
+					var result2   = UnsafeNativeMethods.WebPAnimDecoderGetNext(dec.library, ref buf, ref timestamp);
 
 					if (startFrameIdx == -1 || startFrameIdx <= idx) {
 						bitmap = new Bitmap(cw, ch, PixelFormat.Format32bppArgb);
@@ -369,7 +369,7 @@ namespace WebPWrapper
 					}
 				}
 
-				UnsafeNativeMethods.WebPAnimDecoderDelete(dec.decoder);
+				UnsafeNativeMethods.WebPAnimDecoderDelete(dec.library);
 
 				return frames;
 			} finally {
@@ -401,7 +401,7 @@ namespace WebPWrapper
 			_webPAnimDecoder = UnsafeNativeMethods.WebPAnimDecoderNew(ref webpData, ref decOptions);
 
 			WebPAnimInfo animInfo;
-			UnsafeNativeMethods.WebPAnimDecoderGetInfo(_webPAnimDecoder.decoder, out animInfo);
+			UnsafeNativeMethods.WebPAnimDecoderGetInfo(_webPAnimDecoder.library, out animInfo);
 			_frameCount = frameCount = animInfo.frame_count;
 
 			return true;
@@ -412,14 +412,14 @@ namespace WebPWrapper
 		/// <returns>object with the frame's raw data</returns>
 		public Frame<byte[]> AnimGetFrame(int frameNumber)
 		{
-			if (_webPAnimDecoder.decoder == IntPtr.Zero) {
+			if (_webPAnimDecoder.library == IntPtr.Zero) {
 				throw new InvalidOperationException("Decoder has not been initialized.");
 			}
 			if (frameNumber < 1 || frameNumber > _frameCount) {
 				throw new ArgumentOutOfRangeException("frameNumber");
 			}
 
-			WebPDemuxer webPDemuxer = UnsafeNativeMethods.WebPAnimDecoderGetDemuxer(_webPAnimDecoder);
+			var webPDemuxer = UnsafeNativeMethods.WebPAnimDecoderGetDemuxer(_webPAnimDecoder);
 			WebPIterator iter;
 			bool res = UnsafeNativeMethods.WebPDemuxGetFrame(webPDemuxer, frameNumber, out iter);
 
@@ -918,14 +918,14 @@ namespace WebPWrapper
 		#region | Destruction |
 		private bool _disposed;
 		private GCHandle _pinnedWebP;
-		private WebPAnimDecoder _webPAnimDecoder;
+		private WebPOpaque _webPAnimDecoder;
 		private uint _frameCount;
 
 		private void DisposeOldDecoder()
 		{
-			if (_webPAnimDecoder.decoder != IntPtr.Zero) {
-				UnsafeNativeMethods.WebPAnimDecoderDelete(_webPAnimDecoder.decoder);
-				_webPAnimDecoder.decoder = IntPtr.Zero;
+			if (_webPAnimDecoder.library != IntPtr.Zero) {
+				UnsafeNativeMethods.WebPAnimDecoderDelete(_webPAnimDecoder.library);
+				_webPAnimDecoder.library = IntPtr.Zero;
 				if (_pinnedWebP.IsAllocated) {
 					_pinnedWebP.Free();
 				}
