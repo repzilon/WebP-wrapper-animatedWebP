@@ -403,3 +403,6 @@ WebPTest.exe.config
 !bin/Release
 !WebPTest/x86
 !WebPTest/x64
+
+WebP*/bin/
+*.bak
