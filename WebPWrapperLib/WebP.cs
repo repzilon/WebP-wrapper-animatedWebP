@@ -37,8 +37,6 @@ namespace WebPWrapper
 {
 	public sealed class WebP : IDisposable
 	{
-		private const int WEBP_MAX_DIMENSION = 16383;
-
 		private UnsafeNativeMethods.WebPMemoryWrite _myWriterDelegate;
 
 		#region | Public Decode Functions |
@@ -304,13 +302,7 @@ namespace WebPWrapper
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossy(Bitmap pixelMap, byte quality = 75)
 		{
-			//test bmp
-			if (pixelMap.Width == 0 || pixelMap.Height == 0)
-				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
-			if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION)
-				throw new NotSupportedException("Bitmap dimensions are too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
-			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb)
-				throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
+			TestPixelMapBeforeEncode(pixelMap);
 
 			BitmapData bmpData = null;
 			IntPtr unmanagedData = IntPtr.Zero;
@@ -382,13 +374,7 @@ namespace WebPWrapper
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossless(Bitmap pixelMap)
 		{
-			//test bmp
-			if (pixelMap.Width == 0 || pixelMap.Height == 0)
-				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
-			if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION)
-				throw new NotSupportedException("Bitmap's dimension is too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
-			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb)
-				throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
+			TestPixelMapBeforeEncode(pixelMap);
 
 			BitmapData bmpData = null;
 			IntPtr unmanagedData = IntPtr.Zero;
@@ -808,13 +794,7 @@ namespace WebPWrapper
 				if (UnsafeNativeMethods.WebPValidateConfig(ref config) != 1)
 					throw new Exception("Bad configuration parameters");
 
-				//test bmp
-				if (pixelMap.Width == 0 || pixelMap.Height == 0)
-					throw new ArgumentException("Bitmap contains no data.", "pixelMap");
-				if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION)
-					throw new NotSupportedException("Bitmap's dimension is too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
-				if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb)
-					throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
+				TestPixelMapBeforeEncode(pixelMap);
 
 				// Setup the input data, allocating a the bitmap, width and height
 				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
@@ -988,6 +968,21 @@ namespace WebPWrapper
 				wpicSource.use_argb = 0;
 				if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
 					throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
+			}
+		}
+
+		private static void TestPixelMapBeforeEncode(Bitmap pixelMap)
+		{
+			const int WEBP_MAX_DIMENSION = 16383;
+			//test bmp
+			if (pixelMap.Width == 0 || pixelMap.Height == 0) {
+				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
+			}
+			if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION) {
+				throw new NotSupportedException("Bitmap dimensions are too large. Max is 16383x16383 pixels.");
+			}
+			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb) {
+				throw new NotSupportedException("Supported pixel formats are Format24bppRgb and Format32bppArgb only.");
 			}
 		}
 		#endregion
