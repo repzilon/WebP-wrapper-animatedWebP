@@ -66,7 +66,7 @@ namespace WebPWrapper
 				//Create a BitmapData and Lock all pixels to be written
 				pixelMap = new Bitmap(info.Width, info.Height, info.HasAlpha ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
 
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, info.Width, info.Height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
+				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
 
 				//Uncompress the image
 				int outputSize = bmpData.Stride * info.Height;
@@ -151,7 +151,8 @@ namespace WebPWrapper
 					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
 					pixelMap = new Bitmap(config.input.Width, config.input.Height, PixelFormat.Format24bppRgb);
 				}
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
+
+				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
 
 				// Specify the output format
 				config.output.u.RGBA.rgba = bmpData.Scan0;
@@ -200,7 +201,7 @@ namespace WebPWrapper
 
 				// Create a BitmapData and Lock all pixels to be written
 				pixelMap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
+				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
 
 				// Specify the output format
 				config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
@@ -262,7 +263,7 @@ namespace WebPWrapper
 					config.output.colorspace = WEBP_CSP_MODE.MODE_BGR;
 					pixelMap = new Bitmap(width, height, PixelFormat.Format24bppRgb);
 				}
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
+				bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly);
 
 				// Specify the output format
 				config.output.u.RGBA.rgba = bmpData.Scan0;
@@ -318,7 +319,7 @@ namespace WebPWrapper
 				int size;
 
 				//Get bmp data
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.ReadOnly, pixelMap.PixelFormat);
+				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
 
 				//Compress the bmp data
 				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
@@ -393,7 +394,7 @@ namespace WebPWrapper
 			IntPtr unmanagedData = IntPtr.Zero;
 			try {
 				//Get bmp data
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.ReadOnly, pixelMap.PixelFormat);
+				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
 
 				//Compress the bmp data
 				int size;
@@ -761,7 +762,7 @@ namespace WebPWrapper
 				}
 
 				// Setup the source picture data, allocating the bitmap, width and height
-				sourceBmpData = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), ImageLockMode.ReadOnly, source.PixelFormat);
+				sourceBmpData = LockAllBits(source, ImageLockMode.ReadOnly);
 				wpicSource = new WebPPicture();
 				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpicSource) != 1)
 					throw new Exception("Can´t initialize WebPPictureInit");
@@ -780,7 +781,7 @@ namespace WebPWrapper
 				}
 
 				// Setup the reference picture data, allocating the bitmap, width and height
-				referenceBmpData = reference.LockBits(new Rectangle(0, 0, reference.Width, reference.Height), ImageLockMode.ReadOnly, reference.PixelFormat);
+				referenceBmpData = LockAllBits(reference, ImageLockMode.ReadOnly);
 				wpicReference = new WebPPicture();
 				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpicReference) != 1)
 					throw new Exception("Can´t initialize WebPPictureInit");
@@ -851,7 +852,7 @@ namespace WebPWrapper
 					throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
 
 				// Setup the input data, allocating a the bitmap, width and height
-				bmpData = pixelMap.LockBits(new Rectangle(0, 0, pixelMap.Width, pixelMap.Height), ImageLockMode.ReadOnly, pixelMap.PixelFormat);
+				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
 				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpic) != 1)
 					throw new Exception("Can´t initialize WebPPictureInit");
 				wpic.width = (int)pixelMap.Width;
@@ -997,6 +998,11 @@ namespace WebPWrapper
 			return 1;
 		}
 #endif
+
+		private static BitmapData LockAllBits(Bitmap toLock, ImageLockMode mode)
+		{
+			return toLock.LockBits(new Rectangle(0, 0, toLock.Width, toLock.Height), mode, toLock.PixelFormat);
+		}
 		#endregion
 
 		#region | Destruction |
