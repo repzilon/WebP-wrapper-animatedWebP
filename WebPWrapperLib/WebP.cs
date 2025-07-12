@@ -110,10 +110,7 @@ namespace WebPWrapper
 				int width;
 #endif
 				if (options.use_scaling == 0) {
-					result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref config.input);
-					if (result != VP8StatusCode.VP8_STATUS_OK) {
-						throw new ExternalException("Failed WebPGetFeatures with error " + result, (int)result);
-					}
+					GetFeatures(ptrRawWebP, rawWebP, ref config.input);
 
 					//Test cropping values
 					if (options.use_cropping == 1) {
@@ -757,6 +754,14 @@ namespace WebPWrapper
 			return toLock.LockBits(new Rectangle(0, 0, toLock.Width, toLock.Height), mode, toLock.PixelFormat);
 		}
 
+		private static void GetFeatures(IntPtr ptrRawWebP, byte[] rawWebP, ref WebPBitstreamFeatures features)
+		{
+			var result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref features);
+			if (result != VP8StatusCode.VP8_STATUS_OK) {
+				throw new ExternalException("Failed WebPGetFeatures with error " + result, (int)result);
+			}
+		}
+
 		private static Bitmap GetThumbnail(byte[] rawWebP, short width, short height, bool fancy)
 		{
 			Bitmap     pixelMap = null;
@@ -773,10 +778,7 @@ namespace WebPWrapper
 
 				ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
 				if (fancy) {
-					var result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref config.input);
-					if (result != VP8StatusCode.VP8_STATUS_OK) {
-						throw new ExternalException("Failed WebPGetFeatures with error " + result, (int)result);
-					}
+					GetFeatures(ptrRawWebP, rawWebP, ref config.input);
 				}
 
 				// Set up decode options
@@ -797,7 +799,7 @@ namespace WebPWrapper
 				SpecifyOutputFormat(ref config, width, height, bmpData);
 
 				// Decode
-				CoreDecode(rawWebP, ref config, ptrRawWebP);
+				CoreDecode(ptrRawWebP, rawWebP, ref config);
 				return pixelMap;
 			} finally {
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
@@ -831,14 +833,14 @@ namespace WebPWrapper
 
 			// Decode
 			try {
-				CoreDecode(rawWebP, ref config, ptrRawWebP);
+				CoreDecode(ptrRawWebP, rawWebP, ref config);
 				return pixelMap;
 			} finally {
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 			}
 		}
 
-		private static void CoreDecode(byte[] rawWebP, ref WebPDecoderConfig config, IntPtr ptrRawWebP)
+		private static void CoreDecode(IntPtr ptrRawWebP, byte[] rawWebP, ref WebPDecoderConfig config)
 		{
 			var result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
 			if (result != VP8StatusCode.VP8_STATUS_OK) {

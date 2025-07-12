@@ -233,6 +233,7 @@ namespace WebPWrapper
 		{
 			return WebPDecode(data, (UIntPtr)dataSize, ref webPDecoderConfig);
 		}
+
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDecode")]
 		private static extern VP8StatusCode WebPDecode(IntPtr data, UIntPtr dataSize, ref WebPDecoderConfig config);
 
