@@ -78,13 +78,7 @@ namespace WebPWrapper
 
 				return pixelMap;
 			} finally {
-				//Unlock the pixels
-				if (bmpData != null)
-					pixelMap.UnlockBits(bmpData);
-
-				//Free memory
-				if (pinnedWebP.IsAllocated)
-					pinnedWebP.Free();
+				UnlockPin(pixelMap, bmpData, pinnedWebP);
 			}
 		}
 
@@ -132,6 +126,7 @@ namespace WebPWrapper
 					height = options.scaled_height;
 				}
 #endif
+
 				var cop = config.options;
 				cop.bypass_filtering = options.bypass_filtering;
 				cop.no_fancy_upsampling = options.no_fancy_upsampling;
@@ -175,13 +170,7 @@ namespace WebPWrapper
 
 				return pixelMap;
 			} finally {
-				//Unlock the pixels
-				if (bmpData != null)
-					pixelMap.UnlockBits(bmpData);
-
-				//Free memory
-				if (pinnedWebP.IsAllocated)
-					pinnedWebP.Free();
+				UnlockPin(pixelMap, bmpData, pinnedWebP);
 			}
 		}
 
@@ -232,13 +221,7 @@ namespace WebPWrapper
 
 				return pixelMap;
 			} finally {
-				//Unlock the pixels
-				if (bmpData != null)
-					pixelMap.UnlockBits(bmpData);
-
-				//Free memory
-				if (pinnedWebP.IsAllocated)
-					pinnedWebP.Free();
+				UnlockPin(pixelMap, bmpData, pinnedWebP);
 			}
 		}
 
@@ -298,13 +281,7 @@ namespace WebPWrapper
 
 				return pixelMap;
 			} finally {
-				//Unlock the pixels
-				if (bmpData != null)
-					pixelMap.UnlockBits(bmpData);
-
-				//Free memory
-				if (pinnedWebP.IsAllocated)
-					pinnedWebP.Free();
+				UnlockPin(pixelMap, bmpData, pinnedWebP);
 			}
 		}
 		#endregion
@@ -357,13 +334,7 @@ namespace WebPWrapper
 
 				return rawWebP;
 			} finally {
-				//Unlock the pixels
-				if (bmpData != null)
-					pixelMap.UnlockBits(bmpData);
-
-				//Free memory
-				if (unmanagedData != IntPtr.Zero)
-					UnsafeNativeMethods.WebPFree(unmanagedData);
+				UnlockFree(pixelMap, bmpData, unmanagedData);
 			}
 		}
 
@@ -437,13 +408,7 @@ namespace WebPWrapper
 
 				return rawWebP;
 			} finally {
-				//Unlock the pixels
-				if (bmpData != null)
-					pixelMap.UnlockBits(bmpData);
-
-				//Free memory
-				if (unmanagedData != IntPtr.Zero)
-					UnsafeNativeMethods.WebPFree(unmanagedData);
+				UnlockFree(pixelMap, bmpData, unmanagedData);
 			}
 		}
 
@@ -582,9 +547,7 @@ namespace WebPWrapper
 		/// <returns>Bitmaps of the Animated WebP frames</returns>
 		public IEnumerable<FrameData> AnimLoad(string pathFileName)
 		{
-			byte[] rawWebP = File.ReadAllBytes(pathFileName);
-
-			return AnimDecode(rawWebP);
+			return AnimDecode(File.ReadAllBytes(pathFileName));
 		}
 
 		/// <summary>Decode an Animated WebP image</summary>
@@ -646,11 +609,7 @@ namespace WebPWrapper
 
 				return frames;
 			} finally {
-				if (bmpData != null)
-					bitmap.UnlockBits(bmpData);
-
-				if (pinnedWebP.IsAllocated)
-					pinnedWebP.Free();
+				UnlockPin(bitmap, bmpData, pinnedWebP);
 			}
 		}
 
@@ -673,9 +632,7 @@ namespace WebPWrapper
 		/// <returns>true on success</returns>
 		public bool AnimInit(string pathFileName, out uint frameCount)
 		{
-			byte[] rawWebP = File.ReadAllBytes(pathFileName);
-
-			return AnimInit(rawWebP, out frameCount);
+			return AnimInit(File.ReadAllBytes(pathFileName), out frameCount);
 		}
 
 		/// <summary>Initialize the library for handling the given WebP file.</summary>
@@ -771,9 +728,7 @@ namespace WebPWrapper
 
 				return info;
 			} finally {
-				//Free memory
-				if (pinnedWebP.IsAllocated)
-					pinnedWebP.Free();
+				Unpin(pinnedWebP);
 			}
 		}
 
@@ -850,20 +805,9 @@ namespace WebPWrapper
 					throw new Exception("Can´t measure.");
 				return result;
 			} finally {
-				//Unlock the pixels
-				if (sourceBmpData != null)
-					source.UnlockBits(sourceBmpData);
-				if (referenceBmpData != null)
-					reference.UnlockBits(referenceBmpData);
-
-				//Free memory
-				if (wpicSource.argb != IntPtr.Zero)
-					UnsafeNativeMethods.WebPPictureFree(ref wpicSource);
-				if (wpicReference.argb != IntPtr.Zero)
-					UnsafeNativeMethods.WebPPictureFree(ref wpicReference);
-				//Free memory
-				if (pinnedResult.IsAllocated)
-					pinnedResult.Free();
+				UnlockFree(source, sourceBmpData, wpicSource);
+				UnlockFree(reference, referenceBmpData, wpicReference);
+				Unpin(pinnedResult);
 			}
 		}
 		#endregion
@@ -1017,31 +961,18 @@ namespace WebPWrapper
 				}
 				return rawWebP;
 			} finally {
-				//Free temporal compress memory
 #if UNSAFE
 				if (dataWebpPtr != IntPtr.Zero) {
 					Marshal.FreeHGlobal(dataWebpPtr);
 				}
 #else
-				if (pinnedArrayHandle.IsAllocated) {
-					pinnedArrayHandle.Free();
-				}
+				Unpin(pinnedArrayHandle);
 #endif
-
 				//Free statistics memory
 				if (ptrStats != IntPtr.Zero) {
 					Marshal.FreeHGlobal(ptrStats);
 				}
-
-				//Unlock the pixels
-				if (bmpData != null) {
-					pixelMap.UnlockBits(bmpData);
-				}
-
-				//Free memory
-				if (wpic.argb != IntPtr.Zero) {
-					UnsafeNativeMethods.WebPPictureFree(ref wpic);
-				}
+				UnlockFree(pixelMap, bmpData, wpic);
 			}
 		}
 
@@ -1066,7 +997,9 @@ namespace WebPWrapper
 			return 1;
 		}
 #endif
+		#endregion
 
+		#region | Destruction |
 		private bool _disposed;
 		private GCHandle _pinnedWebP;
 		private WebPAnimDecoder _webPAnimDecoder;
@@ -1095,9 +1028,7 @@ namespace WebPWrapper
 
 			_disposed = true;
 		}
-		#endregion
 
-		#region | Destruction |
 		/// <summary>Free memory</summary>
 		public void Dispose()
 		{
@@ -1108,6 +1039,50 @@ namespace WebPWrapper
 		~WebP()
 		{
 			Dispose(false);
+		}
+
+		private static void UnlockPin(Bitmap pixelMap, BitmapData data, GCHandle pinnedWebP)
+		{
+			//Unlock the pixels
+			if (data != null) {
+				pixelMap.UnlockBits(data);
+			}
+			//Free memory
+			if (pinnedWebP.IsAllocated) {
+				pinnedWebP.Free();
+			}
+		}
+
+		private static void UnlockFree(Bitmap pixelMap, BitmapData data, IntPtr unmanagedData)
+		{
+			//Unlock the pixels
+			if (data != null) {
+				pixelMap.UnlockBits(data);
+			}
+			//Free memory
+			if (unmanagedData != IntPtr.Zero) {
+				UnsafeNativeMethods.WebPFree(unmanagedData);
+			}
+		}
+
+		private static void UnlockFree(Bitmap pixelMap, BitmapData data, WebPPicture wpic)
+		{
+			//Unlock the pixels
+			if (data != null) {
+				pixelMap.UnlockBits(data);
+			}
+			//Free memory
+			if (wpic.argb != IntPtr.Zero) {
+				UnsafeNativeMethods.WebPPictureFree(ref wpic);
+			}
+		}
+
+		private static void Unpin(GCHandle pinnedWebP)
+		{
+			//Free memory
+			if (pinnedWebP.IsAllocated) {
+				pinnedWebP.Free();
+			}
 		}
 		#endregion
 	}
