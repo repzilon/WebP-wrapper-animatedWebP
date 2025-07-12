@@ -196,35 +196,8 @@ namespace WebPWrapper
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed, bool info = false)
 		{
-			//Initialize configuration structure
-			WebPConfig config = new WebPConfig();
-
-			//Set compression parameters
-			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, 75) == 0)
-				throw new Exception("Can´t configure preset");
-
-			// Add additional tuning:
-			config.method = speed;
-			if (config.method > 6)
-				config.method = 6;
-			config.quality = quality;
-			config.autofilter = 1;
-			config.pass = speed + 1;
-			config.segments = 4;
-			config.partitions = 3;
-			config.thread_level = 1;
-			config.alpha_quality = quality;
-			config.alpha_filtering = 2;
-			config.use_sharp_yuv = 1;
-
-			if (UnsafeNativeMethods.WebPGetDecoderVersion() > 1082)     //Old version does not support preprocessing 4
-			{
-				config.preprocessing = 4;
-				config.use_sharp_yuv = 1;
-			} else
-				config.preprocessing = 3;
-
-			return AdvancedEncode(pixelMap, config, info);
+			return this.AdvancedEncode(pixelMap,
+				InitEncodeConfig(EncodingMode.Lossy, quality, speed), info);
 		}
 
 		/// <summary>Lossless encoding bitmap to WebP (Simple encoding API)</summary>
@@ -241,31 +214,8 @@ namespace WebPWrapper
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossless(Bitmap pixelMap, byte speed)
 		{
-			//Initialize configuration structure
-			WebPConfig config = new WebPConfig();
-
-			//Set compression parameters
-			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, (speed + 1) * 10) == 0)
-				throw new Exception("Can´t config preset");
-
-			//Old version of DLL does not support info and WebPConfigLosslessPreset
-			if (UnsafeNativeMethods.WebPGetDecoderVersion() > 1082) {
-				if (UnsafeNativeMethods.WebPConfigLosslessPreset(ref config, speed) == 0)
-					throw new Exception("Can´t configure lossless preset");
-			} else {
-				config.lossless = 1;
-				config.method = speed;
-				if (config.method > 6)
-					config.method = 6;
-				config.quality = (speed + 1) * 10;
-			}
-			config.pass = speed + 1;
-			config.thread_level = 1;
-			config.alpha_filtering = 2;
-			config.use_sharp_yuv = 1;
-			config.exact = 0;
-
-			return AdvancedEncode(pixelMap, config, false);
+			return this.AdvancedEncode(pixelMap,
+				InitEncodeConfig(EncodingMode.Lossless, (byte)((speed + 1) * 10), speed), false);
 		}
 
 		/// <summary>Near lossless encoding image in bitmap</summary>
@@ -273,39 +223,19 @@ namespace WebPWrapper
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
 		/// <returns>Compress data</returns>
-		public byte[] EncodeNearLossless(Bitmap pixelMap, int quality, int speed = 9)
+		public byte[] EncodeNearLossless(Bitmap pixelMap, byte quality, byte speed = 9)
 		{
-			//test DLL version
-			if (UnsafeNativeMethods.WebPGetDecoderVersion() <= 1082)
-				throw new Exception("This DLL version not support EncodeNearLossless");
-
-			//Initialize config struct
-			WebPConfig config = new WebPConfig();
-
-			//Set compression parameters
-			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, (speed + 1) * 10) == 0)
-				throw new Exception("Can´t configure preset");
-			if (UnsafeNativeMethods.WebPConfigLosslessPreset(ref config, speed) == 0)
-				throw new Exception("Can´t configure lossless preset");
-			config.pass = speed + 1;
-			config.near_lossless = quality;
-			config.thread_level = 1;
-			config.alpha_filtering = 2;
-			config.use_sharp_yuv = 1;
-			config.exact = 0;
-
-			return AdvancedEncode(pixelMap, config, false);
+			return this.AdvancedEncode(pixelMap,
+				InitEncodeConfig(EncodingMode.NearLossless, quality, speed), false);
 		}
 
 		public void EncodeWithMeta(Bitmap pixelMap, string path, byte[] rawXmp,
 		byte quality = 85, byte speed = 4, bool multithread = false, byte alphaQuality = 100)
 		{
-			IntPtr mux = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
-			var config = new WebPConfig();
-			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, quality) == 0)
-				throw new Exception("Can´t configure preset");
-			config.method = Math.Max(Math.Min(speed, (byte)6), (byte)0); // 0 is fastest
-			config.thread_level = multithread ? 1 : 0;
+			IntPtr mux    = UnsafeNativeMethods.WebPNewInternal(0x0108); // TODO: hardcoded libwebp ABI version
+			var    config = InitEncodeConfig(quality);
+			config.method        = Math.Min(speed, (byte)6); // 0 is fastest
+			config.thread_level  = multithread ? 1 : 0;
 			config.alpha_quality = alphaQuality;
 
 			var rawWebP = AdvancedEncode(pixelMap, config, false);
@@ -954,6 +884,74 @@ namespace WebPWrapper
 			} finally {
 				UnlockFree(pixelMap, bmpData, unmanagedData);
 			}
+		}
+
+		private static WebPConfig InitEncodeConfig(byte quality)
+		{
+			WebPConfig config = new WebPConfig();
+
+			//Set compression parameters
+			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, quality) == 0) {
+				throw new Exception("Can´t configure preset");
+			}
+			return config;
+		}
+
+		private static WebPConfig InitEncodeConfig(bool losslessPreset, byte quality, byte speed,
+		out bool newerWebpLibrary)
+		{
+			var config = InitEncodeConfig(quality);
+			newerWebpLibrary = UnsafeNativeMethods.WebPGetDecoderVersion() > 1082;
+			// Init lossless preset if requested and possible
+			if (losslessPreset && newerWebpLibrary && UnsafeNativeMethods.WebPConfigLosslessPreset(ref config, speed) == 0) {
+				throw new Exception("Can´t configure lossless preset");
+			}
+			// Configure common encode options
+			config.pass            = speed + 1;
+			config.thread_level    = 1;
+			config.alpha_filtering = 2;
+			if (newerWebpLibrary) {
+				config.use_sharp_yuv = 1;
+			}
+			if (losslessPreset) {
+				config.exact = 0;
+			}
+
+			return config;
+		}
+
+		private static WebPConfig InitEncodeConfig(EncodingMode mode, byte quality, byte speed)
+		{
+			bool blnNewer;
+			var  q2     = (mode == EncodingMode.NearLossless) ? (byte)((speed + 1) * 10) : quality;
+			var  config = InitEncodeConfig(mode != EncodingMode.Lossy, q2, speed, out blnNewer);
+			if (mode == EncodingMode.Lossy) {
+				// Add additional tuning:
+				ConfigureMethodAndQuality(ref config, speed, quality);
+				config.autofilter    = 1;
+				config.segments      = 4;
+				config.partitions    = 3;
+				config.alpha_quality = quality;
+				config.preprocessing = blnNewer ? 4 : 3; //Old version does not support preprocessing 4
+			} else if (mode == EncodingMode.Lossless) {
+				if (!blnNewer) {
+					config.lossless = 1;
+					ConfigureMethodAndQuality(ref config, speed, quality);
+				}
+			} else if (mode == EncodingMode.NearLossless) {
+				if (!blnNewer) {
+					throw new NotSupportedException("This DLL version not support EncodeNearLossless");
+				}
+				config.near_lossless = quality;
+			}
+
+			return config;
+		}
+
+		private static void ConfigureMethodAndQuality(ref WebPConfig config, byte speed, byte quality)
+		{
+			config.method  = Math.Min(speed, (byte)6);
+			config.quality = quality;
 		}
 		#endregion
 

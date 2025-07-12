@@ -244,5 +244,12 @@
 		StructuralSimilarity,
 		LightweightSimilarity
 	}
+
+	internal enum EncodingMode
+	{
+		Lossy = 0,
+		Lossless,
+		NearLossless
+	}
 	#endregion
 }
