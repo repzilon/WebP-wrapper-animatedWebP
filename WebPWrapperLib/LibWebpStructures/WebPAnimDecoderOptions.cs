@@ -10,7 +10,7 @@ namespace WebPWrapper
 		/// <summary>Output colorspace. Only the following modes are supported:
 		/// MODE_RGBA, MODE_BGRA, MODE_rgbA and MODE_bgrA.</summary>
 		public WEBP_CSP_MODE color_mode;
-		/// <summary>If true, use multi-threaded decoding</summary>
+		/// <summary>If true, use multithreaded decoding</summary>
 		public int use_threads;
 		/// <summary>Padding for later use</summary>
 		private readonly UInt32 pad1;

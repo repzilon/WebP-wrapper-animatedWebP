@@ -11,16 +11,18 @@ namespace WebPWrapper
 		private static readonly bool IsNetCore3CompatRuntime;
 		internal static void CopyMemory(IntPtr dest, IntPtr src, uint count)
 		{
-			if (IsNetCore3CompatRuntime) CopyMemory_Core(dest, src, count);
-			else CopyMemory_Framework(dest, src, count);
+			if (IsNetCore3CompatRuntime) {
+				CopyMemory_Core(dest, src, count);
+			} else {
+				CopyMemory_Framework(dest, src, count);
+			}
 		}
 
 		[DllImport("kernel32.dll", EntryPoint = "CopyMemory", SetLastError = false)]
-		internal static extern void CopyMemory_Framework(IntPtr dest, IntPtr src, uint count);
+		private static extern void CopyMemory_Framework(IntPtr dest, IntPtr src, uint count);
 
 		[DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory", SetLastError = false)]
-		internal static extern void CopyMemory_Core(IntPtr dest, IntPtr src, uint count);
-
+		private static extern void CopyMemory_Core(IntPtr dest, IntPtr src, uint count);
 
 		[DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = false)]
 		private static extern IntPtr LoadLibrary(string lpFileName);
@@ -36,8 +38,9 @@ namespace WebPWrapper
 				Path.Combine(path, "libwebpdemux.dll"),
 			};
 			foreach (string f in files) {
-				if (File.Exists(f))
+				if (File.Exists(f)) {
 					LoadLibrary(f);
+				}
 			}
 
 			// FIX incompatible entry-points for NET Framework/core <= 2 and later NET(core) versions:
@@ -63,7 +66,7 @@ namespace WebPWrapper
 		#endregion
 
 		#region | Import libwebp functions |
-		private static readonly int WEBP_DECODER_ABI_VERSION = 0x0209;
+		private const int WebpDecoderAbiVersion = 0x0209;
 
 		/// <summary>This function will initialize the configuration according to a predefined set of parameters (referred to by 'preset') and a given quality factor</summary>
 		/// <param name="config">The WebPConfig structure</param>
@@ -72,27 +75,28 @@ namespace WebPWrapper
 		/// <returns>0 if error</returns>
 		internal static int WebPConfigInit(ref WebPConfig config, WebPPreset preset, float quality)
 		{
-			return WebPConfigInitInternal(ref config, preset, quality, WEBP_DECODER_ABI_VERSION);
+			return WebPConfigInitInternal(ref config, preset, quality, WebpDecoderAbiVersion);
 		}
+
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPConfigInitInternal")]
-		private static extern int WebPConfigInitInternal(ref WebPConfig config, WebPPreset preset, float quality, int WEBP_DECODER_ABI_VERSION);
+		private static extern int WebPConfigInitInternal(ref WebPConfig config, WebPPreset preset, float quality, int webpDecoderAbiVersion);
 
 		/// <summary>Get info of WepP image</summary>
 		/// <param name="rawWebP">Bytes[] of WebP image</param>
-		/// <param name="data_size">Size of rawWebP</param>
+		/// <param name="dataSize">Size of rawWebP</param>
 		/// <param name="features">Features of WebP image</param>
 		/// <returns>VP8StatusCode</returns>
-		internal static VP8StatusCode WebPGetFeatures(IntPtr rawWebP, int data_size, ref WebPBitstreamFeatures features)
+		internal static VP8StatusCode WebPGetFeatures(IntPtr rawWebP, int dataSize, ref WebPBitstreamFeatures features)
 		{
-			return WebPGetFeaturesInternal(rawWebP, (UIntPtr)data_size, ref features, WEBP_DECODER_ABI_VERSION);
+			return WebPGetFeaturesInternal(rawWebP, (UIntPtr)dataSize, ref features, WebpDecoderAbiVersion);
 		}
 
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPGetFeaturesInternal")]
-		private static extern VP8StatusCode WebPGetFeaturesInternal([In] IntPtr rawWebP, UIntPtr data_size, ref WebPBitstreamFeatures features, int WEBP_DECODER_ABI_VERSION);
+		private static extern VP8StatusCode WebPGetFeaturesInternal([In] IntPtr rawWebP, UIntPtr dataSize, ref WebPBitstreamFeatures features, int webpDecoderAbiVersion);
 
 		/// <summary>Activate the lossless compression mode with the desired efficiency</summary>
 		/// <param name="config">The WebPConfig struct</param>
-		/// <param name="level">between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
+		/// <param name="level">between 0 (fastest, lowest compression) and 9 (slower, better compression)</param>
 		/// <returns>0 in case of parameter error</returns>
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPConfigLosslessPreset")]
 		internal static extern int WebPConfigLosslessPreset(ref WebPConfig config, int level);
@@ -108,11 +112,11 @@ namespace WebPWrapper
 		/// <returns>1 if not error</returns>
 		internal static int WebPPictureInitInternal(ref WebPPicture wpic)
 		{
-			return WebPPictureInitInternal(ref wpic, WEBP_DECODER_ABI_VERSION);
+			return WebPPictureInitInternal(ref wpic, WebpDecoderAbiVersion);
 		}
 
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPPictureInitInternal")]
-		private static extern int WebPPictureInitInternal(ref WebPPicture wpic, int WEBP_DECODER_ABI_VERSION);
+		private static extern int WebPPictureInitInternal(ref WebPPicture wpic, int webpDecoderAbiVersion);
 
 		/// <summary>Color space conversion function to import RGB samples</summary>
 		/// <param name="wpic">The WebPPicture structure</param>
@@ -130,21 +134,13 @@ namespace WebPWrapper
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPPictureImportBGRA")]
 		internal static extern int WebPPictureImportBGRA(ref WebPPicture wpic, IntPtr bgra, int stride);
 
-		/// <summary>Color-space conversion function to import RGB samples</summary>
-		/// <param name="wpic">The WebPPicture structure</param>
-		/// <param name="bgr">Point to BGR data</param>
-		/// <param name="stride">stride of BGR data</param>
-		/// <returns>Returns 0 in case of memory error.</returns>
-		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPPictureImportBGRX")]
-		internal static extern int WebPPictureImportBGRX(ref WebPPicture wpic, IntPtr bgr, int stride);
-
 		/// <summary>The writer type for output compress data</summary>
 		/// <param name="data">Data returned</param>
-		/// <param name="data_size">Size of data returned</param>
+		/// <param name="dataSize">Size of data returned</param>
 		/// <param name="wpic">Picture structure</param>
 		/// <returns></returns>
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		internal delegate int WebPMemoryWrite([In] IntPtr data, UIntPtr data_size, ref WebPPicture wpic);
+		internal delegate int WebPMemoryWrite([In] IntPtr data, UIntPtr dataSize, ref WebPPicture wpic);
 
 		/// <summary>Compress to WebP format</summary>
 		/// <param name="config">The configuration structure for compression parameters</param>
@@ -162,81 +158,83 @@ namespace WebPWrapper
 
 		/// <summary>Validate the WebP image header and retrieve the image height and width. Pointers *width and *height can be passed NULL if deemed irrelevant</summary>
 		/// <param name="data">Pointer to WebP image data</param>
-		/// <param name="data_size">This is the size of the memory block pointed to by data containing the image data</param>
+		/// <param name="dataSize">This is the size of the memory block pointed to by data containing the image data</param>
 		/// <param name="width">The range is limited currently from 1 to 16383</param>
 		/// <param name="height">The range is limited currently from 1 to 16383</param>
 		/// <returns>1 if success, otherwise error code returned in the case of (a) formatting error(s).</returns>
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPGetInfo")]
-		internal static extern int WebPGetInfo([In] IntPtr data, UIntPtr data_size, out int width, out int height);
+		internal static extern int WebPGetInfo([In] IntPtr data, UIntPtr dataSize, out int width, out int height);
 
 		/// <summary>Decode WEBP image pointed to by *data and returns BGR samples into a preallocated buffer</summary>
 		/// <param name="data">Pointer to WebP image data</param>
-		/// <param name="data_size">This is the size of the memory block pointed to by data containing the image data</param>
-		/// <param name="output_buffer">Pointer to decoded WebP image</param>
-		/// <param name="output_buffer_size">Size of allocated buffer</param>
-		/// <param name="output_stride">Specifies the distance between scan lines</param>
-		internal static void WebPDecodeBGRInto(IntPtr data, int data_size, IntPtr output_buffer, int output_buffer_size, int output_stride)
+		/// <param name="dataSize">This is the size of the memory block pointed to by data containing the image data</param>
+		/// <param name="outputBuffer">Pointer to decoded WebP image</param>
+		/// <param name="outputBufferSize">Size of allocated buffer</param>
+		/// <param name="outputStride">Specifies the distance between scan lines</param>
+		internal static void WebPDecodeBgrInto(IntPtr data, int dataSize, IntPtr outputBuffer, int outputBufferSize, int outputStride)
 		{
-			if (WebPDecodeBGRInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == IntPtr.Zero)
+			if (WebPDecodeBGRInto(data, (UIntPtr)dataSize, outputBuffer, outputBufferSize, outputStride) == IntPtr.Zero) {
 				throw new InvalidOperationException("Can not decode WebP");
+			}
 		}
 
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDecodeBGRInto")]
-		private static extern IntPtr WebPDecodeBGRInto([In] IntPtr data, UIntPtr data_size, IntPtr output_buffer, int output_buffer_size, int output_stride);
+		private static extern IntPtr WebPDecodeBGRInto([In] IntPtr data, UIntPtr dataSize, IntPtr outputBuffer, int outputBufferSize, int outputStride);
 
 		/// <summary>Decode WEBP image pointed to by *data and returns BGRA samples into a preallocated buffer</summary>
 		/// <param name="data">Pointer to WebP image data</param>
-		/// <param name="data_size">This is the size of the memory block pointed to by data containing the image data</param>
-		/// <param name="output_buffer">Pointer to decoded WebP image</param>
-		/// <param name="output_buffer_size">Size of allocated buffer</param>
-		/// <param name="output_stride">Specifies the distance between scan lines</param>
-		internal static void WebPDecodeBGRAInto(IntPtr data, int data_size, IntPtr output_buffer, int output_buffer_size, int output_stride)
+		/// <param name="dataSize">This is the size of the memory block pointed to by data containing the image data</param>
+		/// <param name="outputBuffer">Pointer to decoded WebP image</param>
+		/// <param name="outputBufferSize">Size of allocated buffer</param>
+		/// <param name="outputStride">Specifies the distance between scan lines</param>
+		internal static void WebPDecodeBgraInto(IntPtr data, int dataSize, IntPtr outputBuffer, int outputBufferSize, int outputStride)
 		{
-			if (WebPDecodeBGRAInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == IntPtr.Zero)
+			if (WebPDecodeBGRAInto(data, (UIntPtr)dataSize, outputBuffer, outputBufferSize, outputStride) == IntPtr.Zero) {
 				throw new InvalidOperationException("Can not decode WebP");
+			}
 		}
 
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDecodeBGRAInto")]
-		private static extern IntPtr WebPDecodeBGRAInto([In] IntPtr data, UIntPtr data_size, IntPtr output_buffer, int output_buffer_size, int output_stride);
-
+		private static extern IntPtr WebPDecodeBGRAInto([In] IntPtr data, UIntPtr dataSize, IntPtr outputBuffer, int outputBufferSize, int outputStride);
 
 		/// <summary>Decode WEBP image pointed to by *data and returns ARGB samples into a preallocated buffer</summary>
 		/// <param name="data">Pointer to WebP image data</param>
-		/// <param name="data_size">This is the size of the memory block pointed to by data containing the image data</param>
-		/// <param name="output_buffer">Pointer to decoded WebP image</param>
-		/// <param name="output_buffer_size">Size of allocated buffer</param>
-		/// <param name="output_stride">Specifies the distance between scan lines</param>
-		internal static void WebPDecodeARGBInto(IntPtr data, int data_size, IntPtr output_buffer, int output_buffer_size, int output_stride)
+		/// <param name="dataSize">This is the size of the memory block pointed to by data containing the image data</param>
+		/// <param name="outputBuffer">Pointer to decoded WebP image</param>
+		/// <param name="outputBufferSize">Size of allocated buffer</param>
+		/// <param name="outputStride">Specifies the distance between scan lines</param>
+		internal static void WebPDecodeArgbInto(IntPtr data, int dataSize, IntPtr outputBuffer, int outputBufferSize, int outputStride)
 		{
-			if (WebPDecodeARGBInto(data, (UIntPtr)data_size, output_buffer, output_buffer_size, output_stride) == IntPtr.Zero)
+			if (WebPDecodeARGBInto(data, (UIntPtr)dataSize, outputBuffer, outputBufferSize, outputStride) == IntPtr.Zero) {
 				throw new InvalidOperationException("Can not decode WebP");
+			}
 		}
 
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDecodeARGBInto")]
-		private static extern IntPtr WebPDecodeARGBInto([In] IntPtr data, UIntPtr data_size, IntPtr output_buffer, int output_buffer_size, int output_stride);
+		private static extern IntPtr WebPDecodeARGBInto([In] IntPtr data, UIntPtr dataSize, IntPtr outputBuffer, int outputBufferSize, int outputStride);
 
 		/// <summary>Initialize the configuration as empty. This function must always be called first, unless WebPGetFeatures() is to be called</summary>
 		/// <param name="webPDecoderConfig">Configuration structure</param>
 		/// <returns>False in case of mismatched version.</returns>
 		internal static int WebPInitDecoderConfig(ref WebPDecoderConfig webPDecoderConfig)
 		{
-			return WebPInitDecoderConfigInternal(ref webPDecoderConfig, WEBP_DECODER_ABI_VERSION);
+			return WebPInitDecoderConfigInternal(ref webPDecoderConfig, WebpDecoderAbiVersion);
 		}
 
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPInitDecoderConfigInternal")]
-		private static extern int WebPInitDecoderConfigInternal(ref WebPDecoderConfig webPDecoderConfig, int WEBP_DECODER_ABI_VERSION);
+		private static extern int WebPInitDecoderConfigInternal(ref WebPDecoderConfig webPDecoderConfig, int webpDecoderAbiVersion);
 
 		/// <summary>Decodes the full data at once, taking configuration into account</summary>
 		/// <param name="data">WebP raw data to decode</param>
-		/// <param name="data_size">Size of WebP data </param>
+		/// <param name="dataSize">Size of WebP data </param>
 		/// <param name="webPDecoderConfig">Configuration structure</param>
 		/// <returns>VP8_STATUS_OK if the decoding was successful</returns>
-		internal static VP8StatusCode WebPDecode(IntPtr data, int data_size, ref WebPDecoderConfig webPDecoderConfig)
+		internal static VP8StatusCode WebPDecode(IntPtr data, int dataSize, ref WebPDecoderConfig webPDecoderConfig)
 		{
-			return WebPDecode(data, (UIntPtr)data_size, ref webPDecoderConfig);
+			return WebPDecode(data, (UIntPtr)dataSize, ref webPDecoderConfig);
 		}
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDecode")]
-		private static extern VP8StatusCode WebPDecode(IntPtr data, UIntPtr data_size, ref WebPDecoderConfig config);
+		private static extern VP8StatusCode WebPDecode(IntPtr data, UIntPtr dataSize, ref WebPDecoderConfig config);
 
 		/// <summary>Free any memory associated with the buffer. Must always be called last. Doesn't free the 'buffer' structure itself</summary>
 		/// <param name="buffer">WebPDecBuffer</param>
@@ -248,22 +246,22 @@ namespace WebPWrapper
 		/// <param name="width">The range is limited currently from 1 to 16383</param>
 		/// <param name="height">The range is limited currently from 1 to 16383</param>
 		/// <param name="stride">Specifies the distance between scanlines</param>
-		/// <param name="quality_factor">Ranges from 0 (lower quality) to 100 (highest quality). Controls the loss and quality during compression</param>
+		/// <param name="qualityFactor">Ranges from 0 (lower quality) to 100 (highest quality). Controls the loss and quality during compression</param>
 		/// <param name="output">output_buffer with WebP image</param>
 		/// <returns>Size of WebP Image or 0 if an error occurred</returns>
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPEncodeBGR")]
-		internal static extern int WebPEncodeBGR([In] IntPtr bgr, int width, int height, int stride, float quality_factor, out IntPtr output);
+		internal static extern int WebPEncodeBGR([In] IntPtr bgr, int width, int height, int stride, float qualityFactor, out IntPtr output);
 
 		/// <summary>Lossy encoding images</summary>
 		/// <param name="bgra">Pointer to BGRA image data</param>
 		/// <param name="width">The range is limited currently from 1 to 16383</param>
 		/// <param name="height">The range is limited currently from 1 to 16383</param>
 		/// <param name="stride">Specifies the distance between scan lines</param>
-		/// <param name="quality_factor">Ranges from 0 (lower quality) to 100 (highest quality). Controls the loss and quality during compression</param>
+		/// <param name="qualityFactor">Ranges from 0 (lower quality) to 100 (highest quality). Controls the loss and quality during compression</param>
 		/// <param name="output">output_buffer with WebP image</param>
 		/// <returns>Size of WebP Image or 0 if an error occurred</returns>
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPEncodeBGRA")]
-		internal static extern int WebPEncodeBGRA([In] IntPtr bgra, int width, int height, int stride, float quality_factor, out IntPtr output);
+		internal static extern int WebPEncodeBGRA([In] IntPtr bgra, int width, int height, int stride, float qualityFactor, out IntPtr output);
 
 		/// <summary>Lossless encoding images pointed to by *data in WebP format</summary>
 		/// <param name="bgr">Pointer to BGR image data</param>
@@ -298,11 +296,11 @@ namespace WebPWrapper
 		/// <summary>Compute PSNR, SSIM or LSIM distortion metric between two pictures</summary>
 		/// <param name="srcPicture">Picture to measure</param>
 		/// <param name="refPicture">Reference picture</param>
-		/// <param name="metric_type">0 = PSNR, 1 = SSIM, 2 = LSIM</param>
+		/// <param name="metricType">0 = PSNR, 1 = SSIM, 2 = LSIM</param>
 		/// <param name="pResult">dB in the Y/U/V/Alpha/All order</param>
 		/// <returns>False in case of error (the two pictures don't have same dimension, ...)</returns>
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPPictureDistortion")]
-		internal static extern int WebPPictureDistortion(ref WebPPicture srcPicture, ref WebPPicture refPicture, int metric_type, IntPtr pResult);
+		internal static extern int WebPPictureDistortion(ref WebPPicture srcPicture, ref WebPPicture refPicture, int metricType, IntPtr pResult);
 
 		[DllImport("libwebp.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMalloc")]
 		internal static extern IntPtr WebPMalloc(int size);
@@ -314,53 +312,52 @@ namespace WebPWrapper
 #endif
 		private static void ValidatePlatform()
 		{
-			if (IntPtr.Size != 4 && IntPtr.Size != 8)
+			if (IntPtr.Size != 4 && IntPtr.Size != 8) {
 				throw new InvalidOperationException("Invalid platform. Can not find proper function");
+			}
 		}
 
 		/*
         * from WebPAnimDecoder API
         */
-		private static readonly int WEBP_DEMUX_ABI_VERSION = 0x0107;
+		private static readonly int WebpDemuxAbiVersion = 0x0107;
 
 		/// <summary>Should always be called, to initialize a fresh WebPAnimDecoderOptions
 		/// structure before modification. Returns false in case of version mismatch.
 		/// WebPAnimDecoderOptionsInit() must have succeeded before using the
 		/// 'dec_options' object.</summary>
-		/// <param name="dec_options">(in/out) options used for decoding animation</param>
+		/// <param name="decOptions">(in/out) options used for decoding animation</param>
 		/// <returns>true/false - success/error</returns>
-		internal static bool WebPAnimDecoderOptionsInit(ref WebPAnimDecoderOptions dec_options)
+		internal static bool WebPAnimDecoderOptionsInit(ref WebPAnimDecoderOptions decOptions)
 		{
 			ValidatePlatform();
-
-			return WebPAnimDecoderOptionsInitInternal(ref dec_options, WEBP_DEMUX_ABI_VERSION) == 1;
+			return WebPAnimDecoderOptionsInitInternal(ref decOptions, WebpDemuxAbiVersion) == 1;
 		}
-		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderOptionsInitInternal")]
-		private static extern int WebPAnimDecoderOptionsInitInternal(ref WebPAnimDecoderOptions dec_options, int WEBP_DEMUX_ABI_VERSION);
 
+		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderOptionsInitInternal")]
+		private static extern int WebPAnimDecoderOptionsInitInternal(ref WebPAnimDecoderOptions decOptions, int webpDemuxAbiVersion);
 
 		/// <summary>
 		/// Creates and initializes a WebPAnimDecoder object.
 		/// </summary>
-		/// <param name="webp_data">(in) WebP bitstream. This should remain unchanged during the 
+		/// <param name="webpData">(in) WebP bitstream. This should remain unchanged during the
 		///     lifetime of the output WebPAnimDecoder object.</param>
-		/// <param name="dec_options">(in) decoding options. Can be passed NULL to choose 
-		///     reasonable defaults (in particular, color mode MODE_RGBA 
+		/// <param name="decOptions">(in) decoding options. Can be passed NULL to choose
+		///     reasonable defaults (in particular, color mode MODE_RGBA
 		///     will be picked).</param>
 		/// <returns>A pointer to the newly created WebPAnimDecoder object, or NULL in case of
 		///     parsing error, invalid option or memory error.</returns>
-		internal static WebPAnimDecoder WebPAnimDecoderNew(ref WebPData webp_data, ref WebPAnimDecoderOptions dec_options)
+		internal static WebPAnimDecoder WebPAnimDecoderNew(ref WebPData webpData, ref WebPAnimDecoderOptions decOptions)
 		{
 			//ValidatePlatform();
 
-			IntPtr ptr = WebPAnimDecoderNewInternal(ref webp_data, ref dec_options, WEBP_DEMUX_ABI_VERSION);
+			IntPtr ptr = WebPAnimDecoderNewInternal(ref webpData, ref decOptions, WebpDemuxAbiVersion);
 			WebPAnimDecoder decoder = new WebPAnimDecoder() { decoder = ptr };
 			return decoder;
-
 		}
-		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderNewInternal")]
-		private static extern IntPtr WebPAnimDecoderNewInternal(ref WebPData webp_data, ref WebPAnimDecoderOptions dec_options, int WEBP_DEMUX_ABI_VERSION);
 
+		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderNewInternal")]
+		private static extern IntPtr WebPAnimDecoderNewInternal(ref WebPData webpData, ref WebPAnimDecoderOptions decOptions, int webpDemuxAbiVersion);
 
 		/// <summary>Get global information about the animation.</summary>
 		/// <param name="dec">(in) decoder instance to get information from.</param>
@@ -369,12 +366,11 @@ namespace WebPWrapper
 		internal static bool WebPAnimDecoderGetInfo(IntPtr dec, out WebPAnimInfo info)
 		{
 			//ValidatePlatform();
-
 			return WebPAnimDecoderGetInfoInternal(dec, out info) == 1;
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderGetInfo")]
 		private static extern int WebPAnimDecoderGetInfoInternal(IntPtr dec, out WebPAnimInfo info);
-
 
 		/// <summary>Check if there are more frames left to decode.</summary>
 		/// <param name="dec">(in) decoder instance to be checked.</param>
@@ -385,12 +381,11 @@ namespace WebPWrapper
 		internal static bool WebPAnimDecoderHasMoreFrames(IntPtr dec)
 		{
 			//ValidatePlatform();
-
 			return WebPAnimDecoderHasMoreFramesInternal(dec) == 1;
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderHasMoreFrames")]
 		private static extern int WebPAnimDecoderHasMoreFramesInternal(IntPtr dec);
-
 
 		/// <summary>
 		/// Fetch the next frame from 'dec' based on options supplied to
@@ -409,12 +404,11 @@ namespace WebPWrapper
 		internal static bool WebPAnimDecoderGetNext(IntPtr dec, ref IntPtr buf, ref int timestamp)
 		{
 			//ValidatePlatform();
-
 			return WebPAnimDecoderGetNextInternal(dec, ref buf, ref timestamp) == 1;
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderGetNext")]
 		private static extern int WebPAnimDecoderGetNextInternal(IntPtr dec, ref IntPtr buf, ref int timestamp);
-
 
 		/// <summary>
 		/// Resets the WebPAnimDecoder object, so that next call to
@@ -426,21 +420,20 @@ namespace WebPWrapper
 		internal static void WebPAnimDecoderReset(IntPtr dec)
 		{
 			//ValidatePlatform();
-
 			WebPAnimDecoderResetInternal(dec);
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderReset")]
 		private static extern void WebPAnimDecoderResetInternal(IntPtr dec);
-
 
 		/// <summary>Deletes the WebPAnimDecoder object.</summary>
 		/// <param name="decoder">(in/out) decoder instance to be deleted</param>
 		internal static void WebPAnimDecoderDelete(IntPtr decoder)
 		{
 			//ValidatePlatform();
-
 			WebPAnimDecoderDeleteInternal(decoder);
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPAnimDecoderDelete")]
 		private static extern void WebPAnimDecoderDeleteInternal(IntPtr dec);
 
@@ -480,6 +473,7 @@ namespace WebPWrapper
 		{
 			return WebPDemuxGetFrameInternal(dmux.demuxer, frameNumber, out iter) == 1;
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDemuxGetFrame")]
 		private static extern int WebPDemuxGetFrameInternal(IntPtr dmux, int frameNumber, out WebPIterator iter);
 
@@ -494,6 +488,7 @@ namespace WebPWrapper
 		{
 			WebPDemuxReleaseIteratorInternal(iter);
 		}
+
 		[DllImport("libwebpdemux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPDemuxReleaseIterator")]
 		private static extern int WebPDemuxReleaseIteratorInternal(WebPIterator iter);
 
@@ -501,13 +496,13 @@ namespace WebPWrapper
 		internal static extern IntPtr WebPNewInternal(int version);
 
 		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxSetImage")]
-		internal static extern WebPMuxError WebPMuxSetImage(IntPtr mux, ref WebPData bitstream, int copy_data);
+		internal static extern WebPMuxError WebPMuxSetImage(IntPtr mux, ref WebPData bitstream, int copyData);
 
 		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxSetChunk")]
-		internal static extern WebPMuxError WebPMuxSetChunk(IntPtr mux, string fourcc, ref WebPData chunk_data, int copy_data);
+		internal static extern WebPMuxError WebPMuxSetChunk(IntPtr mux, string fourcc, ref WebPData chunkData, int copyData);
 
 		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxAssemble")]
-		internal static extern WebPMuxError WebPMuxAssemble(IntPtr mux, ref WebPData output_data);
+		internal static extern WebPMuxError WebPMuxAssemble(IntPtr mux, ref WebPData outputData);
 
 		[DllImport("libwebpmux.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "WebPMuxDelete")]
 		internal static extern void WebPMuxDelete(IntPtr mux);

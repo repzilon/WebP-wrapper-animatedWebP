@@ -69,9 +69,9 @@ namespace WebPWrapper
 				int outputSize = bmpData.Stride * info.Height;
 				IntPtr ptrData = pinnedWebP.AddrOfPinnedObject();
 				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb) {
-					UnsafeNativeMethods.WebPDecodeBGRInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
+					UnsafeNativeMethods.WebPDecodeBgrInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
 				} else {
-					UnsafeNativeMethods.WebPDecodeBGRAInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
+					UnsafeNativeMethods.WebPDecodeBgraInto(ptrData, rawWebP.Length, bmpData.Scan0, outputSize, bmpData.Stride);
 				}
 
 				return pixelMap;

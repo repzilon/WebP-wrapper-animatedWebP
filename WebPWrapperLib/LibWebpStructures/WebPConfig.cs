@@ -69,7 +69,7 @@ namespace WebPWrapper
 		/// <summary>If true, compression parameters will be remapped to better match the expected output size from JPEG compression. Generally, the output size will be similar but the degradation will be lower</summary>
 		public int emulate_jpeg_size;
 
-		/// <summary>If non-zero, try and use multi-threaded encoding</summary>
+		/// <summary>If non-zero, try and use multithreaded encoding</summary>
 		public int thread_level;
 
 		/// <summary>If set, reduce memory usage (but increase CPU use)</summary>

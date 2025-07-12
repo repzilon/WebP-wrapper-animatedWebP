@@ -37,7 +37,7 @@ namespace WebPWrapper
 		/// <summary>Final height</summary>
 		public int scaled_height;
 
-		/// <summary>If true, use multi-threaded decoding</summary>
+		/// <summary>If true, use multithreaded decoding</summary>
 		public int use_threads;
 
 		/// <summary>Dithering strength (0=Off, 100=full)</summary>
