@@ -19,7 +19,7 @@
 // Another functions:
 // Version GetVersion() - Get the library version
 // WebPInfo GetInfo(byte[] rawWebP) - Get information of WEBP data
-// float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistorsionMetric metricType) - Get PSNR, SSIM or LSIM distortion metric between two pictures
+// float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistortionMetric metricType) - Get PSNR, SSIM or LSIM distortion metric between two pictures
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // TODO : throw more specific exceptions according to context (throw new Exception("Too short message"); is not informative)
 // TODO : make NuGet package
@@ -738,7 +738,7 @@ namespace WebPWrapper
 		/// <param name="reference">Reference picture</param>
 		/// <param name="metricType">0 = PSNR, 1 = SSIM, 2 = LSIM</param>
 		/// <returns>dB in the Y/U/V/Alpha/All order</returns>
-		public float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistorsionMetric metricType)
+		public float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistortionMetric metricType)
 		{
 			WebPPicture wpicSource = new WebPPicture();
 			WebPPicture wpicReference = new WebPPicture();
@@ -754,8 +754,8 @@ namespace WebPWrapper
 				if (reference == null) {
 					throw new ArgumentNullException("reference", "Reference picture is void");
 				}
-				if (metricType > DistorsionMetric.LightweightSimilarity) {
-					throw new InvalidEnumArgumentException("metricType", (int)metricType, typeof(DistorsionMetric));
+				if (metricType > DistortionMetric.LightweightSimilarity) {
+					throw new InvalidEnumArgumentException("metricType", (int)metricType, typeof(DistortionMetric));
 				}
 				if (source.Width != reference.Width || source.Height != reference.Height) {
 					throw new ArgumentException("Source and Reference pictures have different dimensions");

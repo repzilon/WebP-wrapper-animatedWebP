@@ -126,12 +126,12 @@
 		MODE_ARGB = 4,
 
 		/// <summary>Byte-order: RGB-565: [a4 a3 a2 a1 a0 r5 r4 r3], [r2 r1 r0 g4 g3 g2 g1 g0], ...
-		/// WEBP_SWAP_16BITS_CSP is defined, 
+		/// WEBP_SWAP_16BITS_CSP is defined,
 		/// Byte-order: RGB-565: [a4 a3 a2 a1 a0 b5 b4 b3], [b2 b1 b0 g4 g3 g2 g1 g0], ..</summary>
 		MODE_RGBA_4444 = 5,
 
 		/// <summary>Byte-order: RGB-565: [r4 r3 r2 r1 r0 g5 g4 g3], [g2 g1 g0 b4 b3 b2 b1 b0], ...
-		/// WEBP_SWAP_16BITS_CSP is defined, 
+		/// WEBP_SWAP_16BITS_CSP is defined,
 		/// Byte-order: [b3 b2 b1 b0 a3 a2 a1 a0], [r3 r2 r1 r0 g3 g2 g1 g0], ..</summary>
 		MODE_RGB_565 = 6,
 
@@ -238,7 +238,7 @@
 		WEBP_MUX_NOT_ENOUGH_DATA = -4
 	}
 
-	public enum DistorsionMetric : byte
+	public enum DistortionMetric : byte
 	{
 		PeakSignalNoiseRatio = 0,
 		StructuralSimilarity,

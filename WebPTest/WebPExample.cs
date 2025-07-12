@@ -219,15 +219,15 @@ namespace WebPTest
 							reference = webp.Load(openFileDialog.FileName);
 
 							//Measure PSNR
-							result = webp.GetPictureDistortion(source, reference, DistorsionMetric.PeakSignalNoiseRatio);
+							result = webp.GetPictureDistortion(source, reference, DistortionMetric.PeakSignalNoiseRatio);
 							MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "PSNR");
 
 							//Measure SSIM
-							result = webp.GetPictureDistortion(source, reference, DistorsionMetric.StructuralSimilarity);
+							result = webp.GetPictureDistortion(source, reference, DistortionMetric.StructuralSimilarity);
 							MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "SSIM");
 
 							//Measure LSIM
-							result = webp.GetPictureDistortion(source, reference, DistorsionMetric.LightweightSimilarity);
+							result = webp.GetPictureDistortion(source, reference, DistortionMetric.LightweightSimilarity);
 							MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "LSIM");
 						}
 					}
