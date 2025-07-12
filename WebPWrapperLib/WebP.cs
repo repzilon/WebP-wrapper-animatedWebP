@@ -186,33 +186,7 @@ namespace WebPWrapper
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossy(Bitmap pixelMap, byte quality = 75)
 		{
-			TestPixelMapBeforeEncode(pixelMap);
-
-			BitmapData bmpData = null;
-			IntPtr unmanagedData = IntPtr.Zero;
-
-			try {
-				int size;
-
-				//Get bmp data
-				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
-
-				//Compress the bmp data
-				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
-					size = UnsafeNativeMethods.WebPEncodeBGR(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, quality, out unmanagedData);
-				else
-					size = UnsafeNativeMethods.WebPEncodeBGRA(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, quality, out unmanagedData);
-				if (size == 0)
-					throw new Exception("Can´t encode WebP");
-
-				//Copy image compress data to output array
-				byte[] rawWebP = new byte[size];
-				Marshal.Copy(unmanagedData, rawWebP, 0, size);
-
-				return rawWebP;
-			} finally {
-				UnlockFree(pixelMap, bmpData, unmanagedData);
-			}
+			return CoreEncode(pixelMap, quality);
 		}
 
 		/// <summary>Lossy encoding bitmap to WebP (Advanced encoding API)</summary>
@@ -258,29 +232,7 @@ namespace WebPWrapper
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossless(Bitmap pixelMap)
 		{
-			TestPixelMapBeforeEncode(pixelMap);
-
-			BitmapData bmpData = null;
-			IntPtr unmanagedData = IntPtr.Zero;
-			try {
-				//Get bmp data
-				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
-
-				//Compress the bmp data
-				int size;
-				if (pixelMap.PixelFormat == PixelFormat.Format24bppRgb)
-					size = UnsafeNativeMethods.WebPEncodeLosslessBGR(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, out unmanagedData);
-				else
-					size = UnsafeNativeMethods.WebPEncodeLosslessBGRA(bmpData.Scan0, pixelMap.Width, pixelMap.Height, bmpData.Stride, out unmanagedData);
-
-				//Copy image compress data to output array
-				byte[] rawWebP = new byte[size];
-				Marshal.Copy(unmanagedData, rawWebP, 0, size);
-
-				return rawWebP;
-			} finally {
-				UnlockFree(pixelMap, bmpData, unmanagedData);
-			}
+			return CoreEncode(pixelMap, null);
 		}
 
 		/// <summary>Lossless encoding image in bitmap (Advanced encoding API)</summary>
@@ -678,14 +630,15 @@ namespace WebPWrapper
 				if (UnsafeNativeMethods.WebPValidateConfig(ref config) != 1)
 					throw new Exception("Bad configuration parameters");
 
-				TestPixelMapBeforeEncode(pixelMap);
+				short w, h;
+				TestPixelMapBeforeEncode(pixelMap, out w, out h);
 
-				// Setup the input data, allocating a the bitmap, width and height
+				// Set up the input data, allocating the bitmap, width and height
 				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
 				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpic) != 1)
 					throw new Exception("Can´t initialize WebPPictureInit");
-				wpic.width = (int)pixelMap.Width;
-				wpic.height = (int)pixelMap.Height;
+				wpic.width    = w;
+				wpic.height   = h;
 				wpic.use_argb = 1;
 
 				if (pixelMap.PixelFormat == PixelFormat.Format32bppArgb) {
@@ -855,17 +808,20 @@ namespace WebPWrapper
 			}
 		}
 
-		private static void TestPixelMapBeforeEncode(Bitmap pixelMap)
+		private static void TestPixelMapBeforeEncode(Bitmap pixelMap, out short w, out short h)
 		{
-			const int WEBP_MAX_DIMENSION = 16383;
+			const int kWebpMaxDimension = 16383;
 			//test bmp
-			if (pixelMap.Width == 0 || pixelMap.Height == 0) {
+			w = (short)pixelMap.Width;
+			h = (short)pixelMap.Height;
+			if (w == 0 || h == 0) {
 				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
 			}
-			if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION) {
+			if (w > kWebpMaxDimension || h > kWebpMaxDimension) {
 				throw new NotSupportedException("Bitmap dimensions are too large. Max is 16383x16383 pixels.");
 			}
-			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb) {
+			var f = pixelMap.PixelFormat;
+			if (f != PixelFormat.Format24bppRgb && f != PixelFormat.Format32bppArgb) {
 				throw new NotSupportedException("Supported pixel formats are Format24bppRgb and Format32bppArgb only.");
 			}
 		}
@@ -955,6 +911,48 @@ namespace WebPWrapper
 			} finally {
 				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
 				UnlockPin(pixelMap, bmpData, pinnedWebP);
+			}
+		}
+
+		private static byte[] CoreEncode(Bitmap pixelMap, byte? quality)
+		{
+			short w, h;
+			TestPixelMapBeforeEncode(pixelMap, out w, out h);
+
+			BitmapData bmpData       = null;
+			IntPtr     unmanagedData = IntPtr.Zero;
+
+			try {
+				//Get bmp data
+				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
+
+				//Compress the bmp data
+				int size;
+				var noA = (pixelMap.PixelFormat == PixelFormat.Format24bppRgb);
+				var bs0 = bmpData.Scan0;
+				var bst = bmpData.Stride;
+				if (quality.HasValue) {
+					float qf = quality.Value;
+					size = noA
+						? UnsafeNativeMethods.WebPEncodeBGR(bs0, w,h, bst, qf, out unmanagedData)
+						: UnsafeNativeMethods.WebPEncodeBGRA(bs0, w, h, bst, qf, out unmanagedData);
+				} else {
+					size = noA
+						? UnsafeNativeMethods.WebPEncodeLosslessBGR(bs0, w, h, bst, out unmanagedData)
+						: UnsafeNativeMethods.WebPEncodeLosslessBGRA(bs0, w, h, bst, out unmanagedData);
+				}
+
+				if (size == 0) {
+					throw new Exception("Can´t encode WebP");
+				}
+
+				//Copy image compress data to output array
+				byte[] rawWebP = new byte[size];
+				Marshal.Copy(unmanagedData, rawWebP, 0, size);
+
+				return rawWebP;
+			} finally {
+				UnlockFree(pixelMap, bmpData, unmanagedData);
 			}
 		}
 		#endregion
