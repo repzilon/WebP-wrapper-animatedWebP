@@ -13,5 +13,17 @@ namespace WebPWrapper
 	{
 		public IntPtr data;
 		public UInt64 size;
+
+		public WebPData(IntPtr data, UInt64 size)
+		{
+			this.data = data;
+			this.size = size;
+		}
+
+		public static WebPData Create(byte[] managed, out GCHandle pinned)
+		{
+			pinned = GCHandle.Alloc(managed, GCHandleType.Pinned);
+			return new WebPData(pinned.AddrOfPinnedObject(), Convert.ToUInt64(managed.Length));
+		}
 	}
 }
