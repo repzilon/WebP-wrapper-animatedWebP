@@ -21,6 +21,9 @@
 // WebPInfo GetInfo(byte[] rawWebP) - Get information of WEBP data
 // float[] GetPictureDistortion(Bitmap source, Bitmap reference, DistorsionMetric metricType) - Get PSNR, SSIM or LSIM distortion metric between two pictures
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// TODO : throw more specific exceptions according to context (throw new Exception("Too short message"); is not informative)
+// TODO : make NuGet package
+// NOTE : For non-Windows targets, use SkiaSharp as an alternative to GDI+ which has built-in WebP support.
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -54,18 +57,15 @@ namespace WebPWrapper
 		{
 			Bitmap pixelMap = null;
 			BitmapData bmpData = null;
-			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
+			var pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
 			try {
 				//Get image width and height
 				var info = GetInfo(rawWebP);
 
-
 				//Create a BitmapData and Lock all pixels to be written
-				if (info.HasAlpha)
-					pixelMap = new Bitmap(info.Width, info.Height, PixelFormat.Format32bppArgb);
-				else
-					pixelMap = new Bitmap(info.Width, info.Height, PixelFormat.Format24bppRgb);
+				pixelMap = new Bitmap(info.Width, info.Height, info.HasAlpha ? PixelFormat.Format32bppArgb : PixelFormat.Format24bppRgb);
+
 				bmpData = pixelMap.LockBits(new Rectangle(0, 0, info.Width, info.Height), ImageLockMode.WriteOnly, pixelMap.PixelFormat);
 
 				//Uncompress the image
@@ -92,7 +92,7 @@ namespace WebPWrapper
 		/// <param name="rawWebP">the data to uncompress</param>
 		/// <param name="options">Options for advanced decode</param>
 		/// <returns>Bitmap with the WebP image</returns>
-		public Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options, PixelFormat pixelFormat = PixelFormat.DontCare)
+		public Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options)
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 			Bitmap pixelMap = null;
@@ -105,8 +105,10 @@ namespace WebPWrapper
 				}
 				// Read the .webp input file information
 				IntPtr ptrRawWebP = pinnedWebP.AddrOfPinnedObject();
+#if DEBUG
 				int height;
 				int width;
+#endif
 				if (options.use_scaling == 0) {
 					result = UnsafeNativeMethods.WebPGetFeatures(ptrRawWebP, rawWebP.Length, ref config.input);
 					if (result != VP8StatusCode.VP8_STATUS_OK)
@@ -114,30 +116,37 @@ namespace WebPWrapper
 
 					//Test cropping values
 					if (options.use_cropping == 1) {
-						if (options.crop_left + options.crop_width > config.input.Width || options.crop_top + options.crop_height > config.input.Height)
+						if (options.crop_left + options.crop_width > config.input.Width ||
+							options.crop_top + options.crop_height > config.input.Height) {
 							throw new Exception("Crop options exceeded WebP image dimensions");
+						}
+#if DEBUG
 						width = options.crop_width;
 						height = options.crop_height;
+#endif
 					}
-				} else {
+				}
+#if DEBUG
+				else {
 					width = options.scaled_width;
 					height = options.scaled_height;
 				}
-
-				config.options.bypass_filtering = options.bypass_filtering;
-				config.options.no_fancy_upsampling = options.no_fancy_upsampling;
-				config.options.use_cropping = options.use_cropping;
-				config.options.crop_left = options.crop_left;
-				config.options.crop_top = options.crop_top;
-				config.options.crop_width = options.crop_width;
-				config.options.crop_height = options.crop_height;
-				config.options.use_scaling = options.use_scaling;
-				config.options.scaled_width = options.scaled_width;
-				config.options.scaled_height = options.scaled_height;
-				config.options.use_threads = options.use_threads;
-				config.options.dithering_strength = options.dithering_strength;
-				config.options.flip = options.flip;
-				config.options.alpha_dithering_strength = options.alpha_dithering_strength;
+#endif
+				var cop = config.options;
+				cop.bypass_filtering = options.bypass_filtering;
+				cop.no_fancy_upsampling = options.no_fancy_upsampling;
+				cop.use_cropping = options.use_cropping;
+				cop.crop_left = options.crop_left;
+				cop.crop_top = options.crop_top;
+				cop.crop_width = options.crop_width;
+				cop.crop_height = options.crop_height;
+				cop.use_scaling = options.use_scaling;
+				cop.scaled_width = options.scaled_width;
+				cop.scaled_height = options.scaled_height;
+				cop.use_threads = options.use_threads;
+				cop.dithering_strength = options.dithering_strength;
+				cop.flip = options.flip;
+				cop.alpha_dithering_strength = options.alpha_dithering_strength;
 
 				//Create a BitmapData and Lock all pixels to be written
 				if (config.input.Has_alpha == 1) {
@@ -307,11 +316,8 @@ namespace WebPWrapper
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
 		public void Save(Bitmap pixelMap, string pathFileName, byte quality = 75)
 		{
-			//Encode in webP format
-			byte[] rawWebP = EncodeLossy(pixelMap, quality);
-
-			//Write webP file
-			File.WriteAllBytes(pathFileName, rawWebP);
+			//Encode in webP format and Write webP file
+			File.WriteAllBytes(pathFileName, EncodeLossy(pixelMap, quality));
 		}
 
 		/// <summary>Lossy encoding bitmap to WebP (Simple encoding API)</summary>
@@ -324,7 +330,7 @@ namespace WebPWrapper
 			if (pixelMap.Width == 0 || pixelMap.Height == 0)
 				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
 			if (pixelMap.Width > WEBP_MAX_DIMENSION || pixelMap.Height > WEBP_MAX_DIMENSION)
-				throw new NotSupportedException("Bitmap's dimension is too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
+				throw new NotSupportedException("Bitmap dimensions are too large. Max is " + WEBP_MAX_DIMENSION + "x" + WEBP_MAX_DIMENSION + " pixels.");
 			if (pixelMap.PixelFormat != PixelFormat.Format24bppRgb && pixelMap.PixelFormat != PixelFormat.Format32bppArgb)
 				throw new NotSupportedException("Only support Format24bppRgb and Format32bppArgb pixelFormat.");
 
@@ -1060,19 +1066,6 @@ namespace WebPWrapper
 			return 1;
 		}
 #endif
-
-		/// <summary>The writer type for output compress data</summary>
-		/// <param name="data">Data returned</param>
-		/// <param name="data_size">Size of data returned</param>
-		/// <param name="wpic">Picture structure</param>
-		/// <returns></returns>
-		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-#if UNSAFE
-		private unsafe delegate int WebPMemoryWrite([In()] byte* data, UIntPtr data_size, ref WebPPicture wpic);
-#else
-		private delegate int MyWriterDelegate([In] IntPtr data, UIntPtr data_size, ref WebPPicture wpic);
-#endif
-
 
 		private bool _disposed;
 		private GCHandle _pinnedWebP;
