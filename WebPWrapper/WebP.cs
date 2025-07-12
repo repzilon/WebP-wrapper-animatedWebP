@@ -1,21 +1,21 @@
 ﻿/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Wrapper for WebP format in C#. (MIT) Jose M. Piñeiro
-///////////////////////////////////////////////////////////////////////////////////////////////////////////// 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Decode Functions:
 // Bitmap Load(string pathFileName) - Load a WebP file in bitmap.
 // Bitmap Decode(byte[] rawWebP) - Decode WebP data (rawWebP) to bitmap.
 // Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options) - Decode WebP data (rawWebP) to bitmap using 'options'.
 // Bitmap GetThumbnailFast(byte[] rawWebP, short width, short height) - Get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Fast mode.
 // Bitmap GetThumbnailQuality(byte[] rawWebP, short width, short height) - Fast get a thumbnail from WebP data (rawWebP) with dimensions 'width x height'. Quality mode.
-// 
+//
 // Encode Functions:
 // Save(Bitmap pixelMap, string pathFileName, byte quality) - Save bitmap with quality lost to WebP file. Optionally select 'quality'.
 // byte[] EncodeLossy(Bitmap pixelMap, byte quality) - Encode bitmap with quality lost to WebP byte array. Optionally select 'quality'.
 // byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed, bool info) - Encode bitmap with quality lost to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
-// byte[] EncodeLossless(Bitmap pixelMap) - Encode bitmap without quality lost to WebP byte array. 
-// byte[] EncodeLossless(Bitmap pixelMap, byte speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'. 
+// byte[] EncodeLossless(Bitmap pixelMap) - Encode bitmap without quality lost to WebP byte array.
+// byte[] EncodeLossless(Bitmap pixelMap, byte speed, bool info = false) - Encode bitmap without quality lost to WebP byte array. Select 'speed'.
 // byte[] EncodeNearLossless(Bitmap pixelMap, byte quality, byte speed = 9, bool info = false) - Encode bitmap with a near lossless method to WebP byte array. Select 'quality', 'speed' and optionally select 'info'.
-// 
+//
 // Another functions:
 // Version GetVersion() - Get the library version
 // WebPInfo GetInfo(byte[] rawWebP) - Get information of WEBP data
@@ -195,53 +195,6 @@ namespace WebPWrapper
 			return CoreEncode(pixelMap, quality);
 		}
 
-		private static WebPConfig ConfigureEncoding(EncodingMode mode, WebPPreset preset, float quality, byte speed)
-		{
-			var nwc = NativeWrapper.Current;
-
-			//Initialize configuration structure
-			var config = new WebPConfig();
-
-			//Set compression parameters
-			float q2 = (mode == EncodingMode.Lossy) ? quality : (speed + 1) * 10;
-			if (nwc.InitConfig(ref config, preset, q2) == 0) {
-				throw new Exception("Can't configure preset");
-			}
-			config.pass = speed + 1;
-			config.thread_level = 1;
-			config.alpha_filtering = 2;
-			config.use_sharp_yuv = 1;
-
-			var blnNewVersion = nwc.GetDecoderVersion() > 1082;
-			if (mode != EncodingMode.NearLossless) {
-				config.method = speed > 6 ? 6 : speed;
-				config.quality = q2;
-			}
-			if (mode == EncodingMode.Lossy) {
-				// Add additional tuning:
-				config.autofilter = 1;
-				config.segments = 4;
-				config.partitions = 3;
-				config.alpha_quality = (int)quality;
-
-				// Old version does not support preprocessing 4
-				config.preprocessing = blnNewVersion ? 4 : 3;
-			} else {
-				if ((mode == EncodingMode.NearLossless || blnNewVersion) &&
-				(nwc.ConfigLosslessPreset(ref config, speed) == 0)) {
-					throw new Exception("Can't configure lossless preset");
-				}
-				if (mode == EncodingMode.NearLossless) {
-					config.near_lossless = (int)quality;
-				} else if (!blnNewVersion) {
-					config.lossless = 1;
-				}
-				config.exact = 0;
-			}
-
-			return config;
-		}
-
 		/// <summary>Lossy encoding bitmap to WebP (Advanced encoding API)</summary>
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
@@ -386,6 +339,53 @@ namespace WebPWrapper
 		#endregion
 
 		#region | Private Methods |
+		private static WebPConfig ConfigureEncoding(EncodingMode mode, WebPPreset preset, float quality, byte speed)
+		{
+			var nwc = NativeWrapper.Current;
+
+			//Initialize configuration structure
+			var config = new WebPConfig();
+
+			//Set compression parameters
+			float q2 = (mode == EncodingMode.Lossy) ? quality : (speed + 1) * 10;
+			if (nwc.InitConfig(ref config, preset, q2) == 0) {
+				throw new Exception("Can't configure preset");
+			}
+			config.pass            = speed + 1;
+			config.thread_level    = 1;
+			config.alpha_filtering = 2;
+			config.use_sharp_yuv   = 1;
+
+			var blnNewVersion = nwc.GetDecoderVersion() > 1082;
+			if (mode != EncodingMode.NearLossless) {
+				config.method  = speed > 6 ? 6 : speed;
+				config.quality = q2;
+			}
+			if (mode == EncodingMode.Lossy) {
+				// Add additional tuning:
+				config.autofilter    = 1;
+				config.segments      = 4;
+				config.partitions    = 3;
+				config.alpha_quality = (int)quality;
+
+				// Old version does not support preprocessing 4
+				config.preprocessing = blnNewVersion ? 4 : 3;
+			} else {
+				if ((mode == EncodingMode.NearLossless || blnNewVersion) &&
+					(nwc.ConfigLosslessPreset(ref config, speed) == 0)) {
+					throw new Exception("Can't configure lossless preset");
+				}
+				if (mode == EncodingMode.NearLossless) {
+					config.near_lossless = (int)quality;
+				} else if (!blnNewVersion) {
+					config.lossless = 1;
+				}
+				config.exact = 0;
+			}
+
+			return config;
+		}
+
 		/// <summary>Encoding image  using Advanced encoding API</summary>
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="config">Configuration for encode</param>

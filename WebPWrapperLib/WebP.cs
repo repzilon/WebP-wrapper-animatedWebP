@@ -541,6 +541,74 @@ namespace WebPWrapper
 		#endregion
 
 		#region | Private Methods |
+		private static WebPConfig InitEncodeConfig(byte quality)
+		{
+			WebPConfig config = new WebPConfig();
+
+			//Set compression parameters
+			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, quality) == 0) {
+				throw new Exception("Can´t configure preset");
+			}
+			return config;
+		}
+
+		private static WebPConfig InitEncodeConfig(bool losslessPreset, byte quality, byte speed,
+		out bool newerWebpLibrary)
+		{
+			var config = InitEncodeConfig(quality);
+			newerWebpLibrary = UnsafeNativeMethods.WebPGetDecoderVersion() > 1082;
+			// Init lossless preset if requested and possible
+			if (losslessPreset && newerWebpLibrary && UnsafeNativeMethods.WebPConfigLosslessPreset(ref config, speed) == 0) {
+				throw new Exception("Can´t configure lossless preset");
+			}
+			// Configure common encode options
+			config.pass            = speed + 1;
+			config.thread_level    = 1;
+			config.alpha_filtering = 2;
+			if (newerWebpLibrary) {
+				config.use_sharp_yuv = 1;
+			}
+			if (losslessPreset) {
+				config.exact = 0;
+			}
+
+			return config;
+		}
+
+		private static WebPConfig InitEncodeConfig(EncodingMode mode, byte quality, byte speed)
+		{
+			bool blnNewer;
+			var  q2     = (mode == EncodingMode.NearLossless) ? (byte)((speed + 1) * 10) : quality;
+			var  config = InitEncodeConfig(mode != EncodingMode.Lossy, q2, speed, out blnNewer);
+			if (mode == EncodingMode.Lossy) {
+				// Add additional tuning:
+				ConfigureMethodAndQuality(ref config, speed, quality);
+				config.autofilter    = 1;
+				config.segments      = 4;
+				config.partitions    = 3;
+				config.alpha_quality = quality;
+				config.preprocessing = blnNewer ? 4 : 3; //Old version does not support preprocessing 4
+			} else if (mode == EncodingMode.Lossless) {
+				if (!blnNewer) {
+					config.lossless = 1;
+					ConfigureMethodAndQuality(ref config, speed, quality);
+				}
+			} else if (mode == EncodingMode.NearLossless) {
+				if (!blnNewer) {
+					throw new NotSupportedException("This DLL version not support EncodeNearLossless");
+				}
+				config.near_lossless = quality;
+			}
+
+			return config;
+		}
+
+		private static void ConfigureMethodAndQuality(ref WebPConfig config, byte speed, byte quality)
+		{
+			config.method  = Math.Min(speed, (byte)6);
+			config.quality = quality;
+		}
+
 		/// <summary>Encoding image  using Advanced encoding API</summary>
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="config">Configuration for encode</param>
@@ -653,33 +721,6 @@ namespace WebPWrapper
 			}
 		}
 
-#if UNSAFE
-		unsafe private int MyWriter([In] byte* data, UIntPtr data_size, ref WebPPicture picture)
-		{
-			var size = (long)data_size;
-			Buffer.MemoryCopy(data, picture.custom_ptr, size, size);
-			picture.custom_ptr += size;
-		}
-#else
-		private int MyWriter([In] IntPtr data, UIntPtr data_size, ref WebPPicture picture)
-		{
-			//UnsafeNativeMethods.CopyMemory(picture.custom_ptr, data, (uint)data_size);
-			var size = (int)data_size;
-			var buffer = new byte[size];
-			Marshal.Copy(data, buffer, 0, size);
-			Marshal.Copy(buffer, 0, picture.custom_ptr, size);
-
-			//picture.custom_ptr = IntPtr.Add(picture.custom_ptr, (int)data_size);   //Only in .NET > 4.0
-			picture.custom_ptr = new IntPtr(picture.custom_ptr.ToInt64() + (int)data_size);
-			return 1;
-		}
-#endif
-
-		private static BitmapData LockAllBits(Bitmap toLock, ImageLockMode mode)
-		{
-			return toLock.LockBits(new Rectangle(0, 0, toLock.Width, toLock.Height), mode, toLock.PixelFormat);
-		}
-
 		private static void ImportColorData(Bitmap source, bool forceArgb, out BitmapData bmpData, ref WebPPicture wpic)
 		{
 			// Set up the source picture data, allocating the bitmap, width and height
@@ -707,62 +748,31 @@ namespace WebPWrapper
 			}
 		}
 
-		private static void TestPixelMapBeforeEncode(Bitmap pixelMap, out short w, out short h)
+#if UNSAFE
+		unsafe private int MyWriter([In] byte* data, UIntPtr data_size, ref WebPPicture picture)
 		{
-			const int kWebpMaxDimension = 16383;
-			//test bmp
-			w = (short)pixelMap.Width;
-			h = (short)pixelMap.Height;
-			if (w == 0 || h == 0) {
-				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
-			}
-			if (w > kWebpMaxDimension || h > kWebpMaxDimension) {
-				throw new NotSupportedException("Bitmap dimensions are too large. Max is 16383x16383 pixels.");
-			}
-			var f = pixelMap.PixelFormat;
-			if (f != PixelFormat.Format24bppRgb && f != PixelFormat.Format32bppArgb) {
-				throw new NotSupportedException("Supported pixel formats are Format24bppRgb and Format32bppArgb only.");
-			}
+			var size = (long)data_size;
+			Buffer.MemoryCopy(data, picture.custom_ptr, size, size);
+			picture.custom_ptr += size;
 		}
-
-		private static void SpecifyOutputFormat(ref WebPDecoderConfig config, short width, short height, BitmapData bmpData)
+#else
+		private int MyWriter([In] IntPtr data, UIntPtr data_size, ref WebPPicture picture)
 		{
-			var stride = bmpData.Stride;
-			config.output.u.RGBA.rgba        = bmpData.Scan0;
-			config.output.u.RGBA.stride      = stride;
-			config.output.u.RGBA.size        = (UIntPtr)(height * stride);
-			config.output.height             = height;
-			config.output.width              = width;
-			config.output.is_external_memory = 1;
+			//UnsafeNativeMethods.CopyMemory(picture.custom_ptr, data, (uint)data_size);
+			var size = (int)data_size;
+			var buffer = new byte[size];
+			Marshal.Copy(data, buffer, 0, size);
+			Marshal.Copy(buffer, 0, picture.custom_ptr, size);
+
+			//picture.custom_ptr = IntPtr.Add(picture.custom_ptr, (int)data_size);   //Only in .NET > 4.0
+			picture.custom_ptr = new IntPtr(picture.custom_ptr.ToInt64() + (int)data_size);
+			return 1;
 		}
+#endif
 
-		private static Bitmap CoreDecode(byte[] rawWebP, WebPDecoderConfig config, IntPtr ptrRawWebP, out BitmapData bmpData)
+		private static BitmapData LockAllBits(Bitmap toLock, ImageLockMode mode)
 		{
-			//Create a BitmapData and Lock all pixels to be written
-			var blnAlpha = config.input.Has_alpha == 1;
-			config.output.colorspace = blnAlpha ? WEBP_CSP_MODE.MODE_bgrA : WEBP_CSP_MODE.MODE_BGR;
-			var pixelMap = new Bitmap(config.input.Width, config.input.Height,
-				blnAlpha ? PixelFormat.Format32bppArgb: PixelFormat.Format24bppRgb);
-
-			bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly); // caller have to unlock
-
-			SpecifyOutputFormat(ref config, (short)pixelMap.Width, (short)pixelMap.Height, bmpData);
-
-			// Decode
-			try {
-				CoreDecode(rawWebP, ref config, ptrRawWebP);
-				return pixelMap;
-			} finally {
-				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
-			}
-		}
-
-		private static void CoreDecode(byte[] rawWebP, ref WebPDecoderConfig config, IntPtr ptrRawWebP)
-		{
-			var result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
-			if (result != VP8StatusCode.VP8_STATUS_OK) {
-				throw new ExternalException("Failed WebPDecode with error " + result, (int)result);
-			}
+			return toLock.LockBits(new Rectangle(0, 0, toLock.Width, toLock.Height), mode, toLock.PixelFormat);
 		}
 
 		private static Bitmap GetThumbnail(byte[] rawWebP, short width, short height, bool fancy)
@@ -814,6 +824,46 @@ namespace WebPWrapper
 			}
 		}
 
+		private static void SpecifyOutputFormat(ref WebPDecoderConfig config, short width, short height, BitmapData bmpData)
+		{
+			var stride = bmpData.Stride;
+			config.output.u.RGBA.rgba        = bmpData.Scan0;
+			config.output.u.RGBA.stride      = stride;
+			config.output.u.RGBA.size        = (UIntPtr)(height * stride);
+			config.output.height             = height;
+			config.output.width              = width;
+			config.output.is_external_memory = 1;
+		}
+
+		private static Bitmap CoreDecode(byte[] rawWebP, WebPDecoderConfig config, IntPtr ptrRawWebP, out BitmapData bmpData)
+		{
+			//Create a BitmapData and Lock all pixels to be written
+			var blnAlpha = config.input.Has_alpha == 1;
+			config.output.colorspace = blnAlpha ? WEBP_CSP_MODE.MODE_bgrA : WEBP_CSP_MODE.MODE_BGR;
+			var pixelMap = new Bitmap(config.input.Width, config.input.Height,
+				blnAlpha ? PixelFormat.Format32bppArgb: PixelFormat.Format24bppRgb);
+
+			bmpData = LockAllBits(pixelMap, ImageLockMode.WriteOnly); // caller have to unlock
+
+			SpecifyOutputFormat(ref config, (short)pixelMap.Width, (short)pixelMap.Height, bmpData);
+
+			// Decode
+			try {
+				CoreDecode(rawWebP, ref config, ptrRawWebP);
+				return pixelMap;
+			} finally {
+				UnsafeNativeMethods.WebPFreeDecBuffer(ref config.output);
+			}
+		}
+
+		private static void CoreDecode(byte[] rawWebP, ref WebPDecoderConfig config, IntPtr ptrRawWebP)
+		{
+			var result = UnsafeNativeMethods.WebPDecode(ptrRawWebP, rawWebP.Length, ref config);
+			if (result != VP8StatusCode.VP8_STATUS_OK) {
+				throw new ExternalException("Failed WebPDecode with error " + result, (int)result);
+			}
+		}
+
 		private static byte[] CoreEncode(Bitmap pixelMap, byte? quality)
 		{
 			short w, h;
@@ -856,72 +906,22 @@ namespace WebPWrapper
 			}
 		}
 
-		private static WebPConfig InitEncodeConfig(byte quality)
+		private static void TestPixelMapBeforeEncode(Bitmap pixelMap, out short w, out short h)
 		{
-			WebPConfig config = new WebPConfig();
-
-			//Set compression parameters
-			if (UnsafeNativeMethods.WebPConfigInit(ref config, WebPPreset.WEBP_PRESET_DEFAULT, quality) == 0) {
-				throw new Exception("Can´t configure preset");
+			const int kWebpMaxDimension = 16383;
+			//test bmp
+			w = (short)pixelMap.Width;
+			h = (short)pixelMap.Height;
+			if (w == 0 || h == 0) {
+				throw new ArgumentException("Bitmap contains no data.", "pixelMap");
 			}
-			return config;
-		}
-
-		private static WebPConfig InitEncodeConfig(bool losslessPreset, byte quality, byte speed,
-		out bool newerWebpLibrary)
-		{
-			var config = InitEncodeConfig(quality);
-			newerWebpLibrary = UnsafeNativeMethods.WebPGetDecoderVersion() > 1082;
-			// Init lossless preset if requested and possible
-			if (losslessPreset && newerWebpLibrary && UnsafeNativeMethods.WebPConfigLosslessPreset(ref config, speed) == 0) {
-				throw new Exception("Can´t configure lossless preset");
+			if (w > kWebpMaxDimension || h > kWebpMaxDimension) {
+				throw new NotSupportedException("Bitmap dimensions are too large. Max is 16383x16383 pixels.");
 			}
-			// Configure common encode options
-			config.pass            = speed + 1;
-			config.thread_level    = 1;
-			config.alpha_filtering = 2;
-			if (newerWebpLibrary) {
-				config.use_sharp_yuv = 1;
+			var f = pixelMap.PixelFormat;
+			if (f != PixelFormat.Format24bppRgb && f != PixelFormat.Format32bppArgb) {
+				throw new NotSupportedException("Supported pixel formats are Format24bppRgb and Format32bppArgb only.");
 			}
-			if (losslessPreset) {
-				config.exact = 0;
-			}
-
-			return config;
-		}
-
-		private static WebPConfig InitEncodeConfig(EncodingMode mode, byte quality, byte speed)
-		{
-			bool blnNewer;
-			var  q2     = (mode == EncodingMode.NearLossless) ? (byte)((speed + 1) * 10) : quality;
-			var  config = InitEncodeConfig(mode != EncodingMode.Lossy, q2, speed, out blnNewer);
-			if (mode == EncodingMode.Lossy) {
-				// Add additional tuning:
-				ConfigureMethodAndQuality(ref config, speed, quality);
-				config.autofilter    = 1;
-				config.segments      = 4;
-				config.partitions    = 3;
-				config.alpha_quality = quality;
-				config.preprocessing = blnNewer ? 4 : 3; //Old version does not support preprocessing 4
-			} else if (mode == EncodingMode.Lossless) {
-				if (!blnNewer) {
-					config.lossless = 1;
-					ConfigureMethodAndQuality(ref config, speed, quality);
-				}
-			} else if (mode == EncodingMode.NearLossless) {
-				if (!blnNewer) {
-					throw new NotSupportedException("This DLL version not support EncodeNearLossless");
-				}
-				config.near_lossless = quality;
-			}
-
-			return config;
-		}
-
-		private static void ConfigureMethodAndQuality(ref WebPConfig config, byte speed, byte quality)
-		{
-			config.method  = Math.Min(speed, (byte)6);
-			config.quality = quality;
 		}
 		#endregion
 
