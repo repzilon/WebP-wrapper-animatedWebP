@@ -56,11 +56,11 @@ namespace WebPTest
 								if (!info.IsAnimated) {
 									pictureBox.Image = webp.Decode(bytes);
 								} else {
-									//var list = new System.Collections.Generic.List<WebP.FrameData>(webp.AnimDecode(bytes));
-									System.Collections.Generic.IEnumerable<WebP.FrameData> frames = webp.AnimDecode(bytes, 0, 1);
+									var frames = webp.AnimDecode(bytes, 0, 1);
 									var enumerator = frames.GetEnumerator();
 									enumerator.MoveNext();
-									pictureBox.Image = enumerator.Current.Bitmap;
+									pictureBox.Image = enumerator.Current.Data;
+									enumerator.Dispose();
 								}
 							}
 						} else {

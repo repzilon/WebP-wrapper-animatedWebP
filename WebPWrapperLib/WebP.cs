@@ -314,7 +314,11 @@ namespace WebPWrapper
 		/// <summary>Read and Decode an Animated WebP file</summary>
 		/// <param name="pathFileName">Animated WebP file to load</param>
 		/// <returns>Bitmaps of the Animated WebP frames</returns>
+#if NET46 || NETCOREAPP
+		public IReadOnlyList<Frame<Bitmap>> AnimLoad(string pathFileName)
+#else
 		public IEnumerable<Frame<Bitmap>> AnimLoad(string pathFileName)
+#endif
 		{
 			return AnimDecode(File.ReadAllBytes(pathFileName));
 		}
@@ -324,7 +328,11 @@ namespace WebPWrapper
 		/// <param name="startFrameIdx">OPTIONAL start index (including) for first frame that should be returned</param>
 		/// <param name="endFrameIdx">OPTIONAL end index (excluding) for last frame up until that, frames should be returned</param>
 		/// <returns>List of FrameData - each containing frame bitmap and duration</returns>
-		public IEnumerable<FrameData> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
+#if NET46 || NETCOREAPP
+		public IReadOnlyList<Frame<Bitmap>> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
+#else
+		public IEnumerable<Frame<Bitmap>> AnimDecode(byte[] rawWebP, int startFrameIdx = -1, int endFrameIdx = -1)
+#endif
 		{
 			GCHandle pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
