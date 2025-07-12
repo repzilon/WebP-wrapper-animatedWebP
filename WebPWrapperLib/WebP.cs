@@ -513,9 +513,9 @@ namespace WebPWrapper
 					throw new ArgumentException("Source and Reference pictures have different dimensions");
 				}
 
-				SetupPictureForComparison(source, out sourceBmpData, out wpicSource);
+				ImportColorData(source, false, out sourceBmpData, ref wpicSource);
 
-				SetupPictureForComparison(reference, out referenceBmpData, out wpicReference);
+				ImportColorData(reference, false, out referenceBmpData, ref wpicReference);
 
 				//Measure
 				IntPtr ptrResult = pinnedResult.AddrOfPinnedObject();
@@ -564,28 +564,7 @@ namespace WebPWrapper
 				TestPixelMapBeforeEncode(pixelMap, out w, out h);
 
 				// Set up the input data, allocating the bitmap, width and height
-				bmpData = LockAllBits(pixelMap, ImageLockMode.ReadOnly);
-				if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpic) != 1)
-					throw new Exception("Can´t initialize WebPPictureInit");
-				wpic.width    = w;
-				wpic.height   = h;
-				wpic.use_argb = 1;
-
-				if (pixelMap.PixelFormat == PixelFormat.Format32bppArgb) {
-					//Put the bitmap componets in wpic
-					int result = UnsafeNativeMethods.WebPPictureImportBGRA(ref wpic, bmpData.Scan0, bmpData.Stride);
-					if (result != 1)
-						throw new Exception("Can´t allocate memory in WebPPictureImportBGRA");
-					wpic.colorspace = (uint)WEBP_CSP_MODE.MODE_bgrA;
-					dataWebpSize = pixelMap.Width * pixelMap.Height * 32;
-					dataWebp = new byte[pixelMap.Width * pixelMap.Height * 32];                //Memory for WebP output
-				} else {
-					//Put the bitmap contents in WebPPicture instance
-					int result = UnsafeNativeMethods.WebPPictureImportBGR(ref wpic, bmpData.Scan0, bmpData.Stride);
-					if (result != 1)
-						throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
-					dataWebpSize = pixelMap.Width * pixelMap.Height * 24;
-				}
+				dataWebpSize = ImportColorData(pixelMap, true, out bmpData, ref wpic);
 
 				//Set up statistics of compression
 				if (info) {
@@ -597,13 +576,10 @@ namespace WebPWrapper
 
 #if UNSAFE
 				//Memory for WebP output
-				if (dataWebpSize > 2147483591)
-					dataWebpSize = 2147483591;
-
 				dataWebpPtr = Marshal.AllocHGlobal(dataWebpSize); // TODO: shouldn't we allocate less? how to know?
                 var initPtr = (byte*)dataWebpPtr.ToPointer();
 #else
-				dataWebp = new byte[pixelMap.Width * pixelMap.Height * 32];
+				dataWebp = new byte[dataWebpSize];
 				pinnedArrayHandle = GCHandle.Alloc(dataWebp, GCHandleType.Pinned);
 				IntPtr initPtr = pinnedArrayHandle.AddrOfPinnedObject();
 #endif
@@ -716,25 +692,40 @@ namespace WebPWrapper
 			return toLock.LockBits(new Rectangle(0, 0, toLock.Width, toLock.Height), mode, toLock.PixelFormat);
 		}
 
-		private static void SetupPictureForComparison(Bitmap source, out BitmapData sourceBmpData, out WebPPicture wpicSource)
+		private static int ImportColorData(Bitmap source, bool forceArgb, out BitmapData bmpData, ref WebPPicture wpic)
 		{
 			// Set up the source picture data, allocating the bitmap, width and height
-			sourceBmpData = LockAllBits(source, ImageLockMode.ReadOnly);
-			wpicSource    = new WebPPicture();
-			if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpicSource) != 1)
+			bmpData = LockAllBits(source, ImageLockMode.ReadOnly);
+			if (UnsafeNativeMethods.WebPPictureInitInternal(ref wpic) != 1) {
 				throw new Exception("Can´t initialize WebPPictureInit");
-			wpicSource.width  = source.Width;
-			wpicSource.height = source.Height;
+			}
+			wpic.width  = source.Width;
+			wpic.height = source.Height;
+			bool blnAlpha = (bmpData.PixelFormat == PixelFormat.Format32bppArgb);
+			wpic.use_argb = (forceArgb || blnAlpha) ? 1 : 0;
 
 			//Put the source bitmap components in wpic
-			if (sourceBmpData.PixelFormat == PixelFormat.Format32bppArgb) {
-				wpicSource.use_argb = 1;
-				if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
+			if (bmpData.PixelFormat == PixelFormat.Format32bppArgb) {
+				if (UnsafeNativeMethods.WebPPictureImportBGRA(ref wpic, bmpData.Scan0, bmpData.Stride) != 1) {
 					throw new Exception("Can´t allocate memory in WebPPictureImportBGRA");
+				}
+				if (forceArgb) {
+					wpic.colorspace = (uint)WEBP_CSP_MODE.MODE_bgrA; // do we need that?
+				}
+				return BufferSize(source, 32); // do we need to reserve that much?
 			} else {
-				wpicSource.use_argb = 0;
-				if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpicSource, sourceBmpData.Scan0, sourceBmpData.Stride) != 1)
+				if (UnsafeNativeMethods.WebPPictureImportBGR(ref wpic, bmpData.Scan0, bmpData.Stride) != 1) {
 					throw new Exception("Can´t allocate memory in WebPPictureImportBGR");
+				}
+				return BufferSize(source, 24);
+			}
+		}
+
+		private static int BufferSize(Bitmap pixelMap, byte multiplier)
+		{
+			checked {
+				long bigSize = pixelMap.Width * pixelMap.Height * multiplier;
+				return (int)Math.Min(bigSize, 2147483591);
 			}
 		}
 
