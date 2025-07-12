@@ -5,7 +5,7 @@ namespace WebPWrapper
 {
 	/// <summary>Anim decoder options</summary>
 	[StructLayout(LayoutKind.Sequential)]
-	public struct WebPAnimDecoderOptions
+	internal struct WebPAnimDecoderOptions
 	{
 		/// <summary>Output colorspace. Only the following modes are supported:
 		/// MODE_RGBA, MODE_BGRA, MODE_rgbA and MODE_bgrA.</summary>

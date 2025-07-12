@@ -5,7 +5,7 @@ namespace WebPWrapper
 {
 	/// <summary>Global information about the animation</summary>
 	[StructLayout(LayoutKind.Sequential)]
-	public struct WebPAnimInfo
+	internal struct WebPAnimInfo
 	{
 		public UInt32 canvas_width;
 		public UInt32 canvas_height;

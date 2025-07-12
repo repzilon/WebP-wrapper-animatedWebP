@@ -5,7 +5,7 @@ namespace WebPWrapper
 {
 	/// <summary>WebP container demux (opaque object)</summary>
 	[StructLayout(LayoutKind.Sequential)]
-	public struct WebPDemuxer
+	internal struct WebPDemuxer
 	{
 		public IntPtr demuxer;
 	}

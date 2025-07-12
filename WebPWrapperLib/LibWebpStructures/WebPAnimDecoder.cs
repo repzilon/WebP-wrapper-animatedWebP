@@ -5,7 +5,7 @@ namespace WebPWrapper
 {
 	/// <summary>Main opaque object.</summary>
 	[StructLayout(LayoutKind.Sequential)]
-	public struct WebPAnimDecoder
+	internal struct WebPAnimDecoder
 	{
 		public IntPtr decoder;
 	}

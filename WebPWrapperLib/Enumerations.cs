@@ -108,7 +108,7 @@
 	}
 
 	/// <summary>Describes the byte-ordering of packed samples in memory</summary>
-	public enum WEBP_CSP_MODE
+	internal enum WEBP_CSP_MODE
 	{
 		/// <summary>Byte-order: R,G,B,R,G,B,..</summary>
 		MODE_RGB = 0,
@@ -206,7 +206,7 @@
 	/// Blend operation (animation only). Indicates how transparent pixels of the
 	/// current frame are blended with those of the previous canvas.
 	/// </summary>
-	public enum WebPMuxAnimBlend
+	internal enum WebPMuxAnimBlend
 	{
 		/// <summary>Blend.</summary>
 		WEBP_MUX_BLEND,
@@ -219,7 +219,7 @@
 	/// Dispose method (animation only). Indicates how the area used by the current
 	/// frame is to be treated before rendering the next frame on the canvas.
 	/// </summary>
-	public enum WebPMuxAnimDispose
+	internal enum WebPMuxAnimDispose
 	{
 		/// <summary>Do not dispose.</summary>
 		WEBP_MUX_DISPOSE_NONE,

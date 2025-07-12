@@ -5,7 +5,7 @@ namespace WebPWrapper
 {
 	/// <summary>Frame iteration</summary>
 	[StructLayout(LayoutKind.Sequential)]
-	public struct WebPIterator
+	internal struct WebPIterator
 	{
 		public int frame_num;
 		/// <summary>equivalent to WEBP_FF_FRAME_COUNT</summary>

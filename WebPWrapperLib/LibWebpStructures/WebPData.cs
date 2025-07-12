@@ -9,7 +9,7 @@ namespace WebPWrapper
 	/// 'bytes' memory must be allocated using WebPMalloc() and such.
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential)]
-	public struct WebPData
+	internal struct WebPData
 	{
 		public IntPtr data;
 		public UInt64 size;
