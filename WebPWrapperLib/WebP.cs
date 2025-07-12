@@ -192,7 +192,7 @@ namespace WebPWrapper
 		/// <summary>Lossy encoding bitmap to WebP (Advanced encoding API)</summary>
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
-		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
+		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, better compression)</param>
 		/// <param name="info">Compression statistics</param>
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossy(Bitmap pixelMap, byte quality, byte speed, out WebPAuxStats info)
@@ -219,7 +219,7 @@ namespace WebPWrapper
 
 		/// <summary>Lossless encoding image in bitmap (Advanced encoding API)</summary>
 		/// <param name="pixelMap">Bitmap with the image</param>
-		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
+		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, better compression)</param>
 		/// <returns>Compressed data</returns>
 		public byte[] EncodeLossless(Bitmap pixelMap, byte speed)
 		{
@@ -231,7 +231,7 @@ namespace WebPWrapper
 		/// <summary>Near lossless encoding image in bitmap</summary>
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="quality">Between 0 (lower quality, lowest file size) and 100 (highest quality, higher file size)</param>
-		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, best compression)</param>
+		/// <param name="speed">Between 0 (fastest, lowest compression) and 9 (slower, better compression)</param>
 		/// <returns>Compress data</returns>
 		public byte[] EncodeNearLossless(Bitmap pixelMap, byte quality, byte speed = 9)
 		{
@@ -292,7 +292,6 @@ namespace WebPWrapper
 		#endregion
 
 		#region | Public AnimDecoder Functions |
-
 		/// <summary>
 		/// Holds information about one frame.
 		/// </summary>
@@ -302,7 +301,6 @@ namespace WebPWrapper
 		public class FrameData
 		{
 			public Bitmap Bitmap { get; set; }
-
 			public int Duration { get; set; }
 		}
 
@@ -326,15 +324,15 @@ namespace WebPWrapper
 			Bitmap bitmap = null;
 			BitmapData bmpData = null;
 			try {
-				WebPAnimDecoderOptions dec_options = new WebPAnimDecoderOptions();
-				var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref dec_options);
-				dec_options.color_mode = WEBP_CSP_MODE.MODE_BGRA;
-				WebPData webp_data = new WebPData
+				WebPAnimDecoderOptions decOptions = new WebPAnimDecoderOptions();
+				var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref decOptions);
+				decOptions.color_mode = WEBP_CSP_MODE.MODE_BGRA;
+				WebPData webpData = new WebPData
 				{
 					data = pinnedWebP.AddrOfPinnedObject(),
 					size = (ulong)rawWebP.Length
 				};
-				WebPAnimDecoder dec = UnsafeNativeMethods.WebPAnimDecoderNew(ref webp_data, ref dec_options);
+				WebPAnimDecoder dec = UnsafeNativeMethods.WebPAnimDecoderNew(ref webpData, ref decOptions);
 				WebPAnimInfo anim_info = new WebPAnimInfo();
 				UnsafeNativeMethods.WebPAnimDecoderGetInfo(dec.decoder, out anim_info);
 
@@ -349,7 +347,6 @@ namespace WebPWrapper
 					var result2 = UnsafeNativeMethods.WebPAnimDecoderGetNext(dec.decoder, ref buf, ref timestamp);
 
 					if (startFrameIdx == -1 || startFrameIdx <= idx) {
-
 						bitmap = new Bitmap((int)anim_info.canvas_width, (int)anim_info.canvas_height, PixelFormat.Format32bppArgb);
 						bmpData = bitmap.LockBits(rect, ImageLockMode.ReadWrite, bitmap.PixelFormat);
 						IntPtr startAddress = bmpData.Scan0;
@@ -409,19 +406,19 @@ namespace WebPWrapper
 
 			_pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 
-			WebPAnimDecoderOptions dec_options = new WebPAnimDecoderOptions();
-			var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref dec_options);
-			dec_options.color_mode = WEBP_CSP_MODE.MODE_BGRA;
-			WebPData webp_data = new WebPData
+			WebPAnimDecoderOptions decOptions = new WebPAnimDecoderOptions();
+			var result = UnsafeNativeMethods.WebPAnimDecoderOptionsInit(ref decOptions);
+			decOptions.color_mode = WEBP_CSP_MODE.MODE_BGRA;
+			WebPData webpData = new WebPData
 			{
 				data = _pinnedWebP.AddrOfPinnedObject(),
 				size = (ulong)rawWebP.Length
 			};
-			_webPAnimDecoder = UnsafeNativeMethods.WebPAnimDecoderNew(ref webp_data, ref dec_options);
+			_webPAnimDecoder = UnsafeNativeMethods.WebPAnimDecoderNew(ref webpData, ref decOptions);
 
-			WebPAnimInfo anim_info;
-			UnsafeNativeMethods.WebPAnimDecoderGetInfo(_webPAnimDecoder.decoder, out anim_info);
-			_frameCount = frameCount = anim_info.frame_count;
+			WebPAnimInfo animInfo;
+			UnsafeNativeMethods.WebPAnimDecoderGetInfo(_webPAnimDecoder.decoder, out animInfo);
+			_frameCount = frameCount = animInfo.frame_count;
 
 			return true;
 		}
@@ -451,7 +448,6 @@ namespace WebPWrapper
 
 			return fd;
 		}
-
 		#endregion
 
 		#region | Another Public Functions |
@@ -614,6 +610,7 @@ namespace WebPWrapper
 		/// <param name="pixelMap">Bitmap with the image</param>
 		/// <param name="config">Configuration for encode</param>
 		/// <param name="info">True if need encode info.</param>
+		/// <param name="stats">Compression statistics, filled when info equals true.</param>
 		/// <returns>Compressed data</returns>
 #if UNSAFE
 		unsafe
@@ -662,8 +659,8 @@ namespace WebPWrapper
 				wpic.custom_ptr = initPtr;
 
 				//Set up a byte-writing method (write-to-memory, in this case)
-				_myWriterDelegate = new UnsafeNativeMethods.WebPMemoryWrite(MyWriter);
-				wpic.writer = Marshal.GetFunctionPointerForDelegate(_myWriterDelegate);
+				_myWriterDelegate = this.MyWriter;
+				wpic.writer       = Marshal.GetFunctionPointerForDelegate(_myWriterDelegate);
 
 				//compress the input samples
 				if (UnsafeNativeMethods.WebPEncode(ref config, ref wpic) != 1)
@@ -757,16 +754,16 @@ namespace WebPWrapper
 			picture.custom_ptr += size;
 		}
 #else
-		private int MyWriter([In] IntPtr data, UIntPtr data_size, ref WebPPicture picture)
+		private int MyWriter([In] IntPtr data, UIntPtr dataSize, ref WebPPicture picture)
 		{
 			//UnsafeNativeMethods.CopyMemory(picture.custom_ptr, data, (uint)data_size);
-			var size = (int)data_size;
+			var size = (int)dataSize;
 			var buffer = new byte[size];
 			Marshal.Copy(data, buffer, 0, size);
 			Marshal.Copy(buffer, 0, picture.custom_ptr, size);
 
 			//picture.custom_ptr = IntPtr.Add(picture.custom_ptr, (int)data_size);   //Only in .NET > 4.0
-			picture.custom_ptr = new IntPtr(picture.custom_ptr.ToInt64() + (int)data_size);
+			picture.custom_ptr = new IntPtr(picture.custom_ptr.ToInt64() + (int)dataSize);
 			return 1;
 		}
 #endif
