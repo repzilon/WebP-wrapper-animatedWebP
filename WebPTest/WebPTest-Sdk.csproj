@@ -14,7 +14,6 @@
     <AssemblyName>WebPTest</AssemblyName>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <NoWarn>NETSDK1138</NoWarn>
-    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetFramework)' == 'net20'">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -52,7 +51,7 @@
   <ItemGroup>
     <ProjectReference Include="..\WebPWrapperLib\WebPWrapperLib-Sdk.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net20'">
+  <ItemGroup Condition=" '$(VisualStudioVersion)' != '17.0' ">
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
 </Project>
