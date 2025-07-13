@@ -16,6 +16,9 @@
     <NoWarn>NETSDK1138</NoWarn>
     <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net20'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Update="WebPExample.cs">
       <SubType>Form</SubType>
