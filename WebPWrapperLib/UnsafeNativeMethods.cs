@@ -314,7 +314,7 @@ namespace WebPWrapper
 		private static void ValidatePlatform()
 		{
 			if (IntPtr.Size != 4 && IntPtr.Size != 8) {
-				throw new InvalidOperationException("Invalid platform. Cannot find proper function.");
+				throw new PlatformNotSupportedException("Invalid platform. Cannot find proper function.");
 			}
 		}
 

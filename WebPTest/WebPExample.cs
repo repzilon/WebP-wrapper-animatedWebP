@@ -42,7 +42,6 @@ namespace WebPTest
 					openFileDialog.FileName = "";
 					if (openFileDialog.ShowDialog() == DialogResult.OK) {
 						this.buttonSave.Enabled = true;
-						this.buttonSave.Enabled = true;
 						string pathFileName = openFileDialog.FileName;
 
 						if (Path.GetExtension(pathFileName) == ".webp") {

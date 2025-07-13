@@ -52,11 +52,13 @@ namespace WebPWrapper
 		/// <returns>Bitmap with the WebP image</returns>
 		public static Bitmap Decode(byte[] rawWebP)
 		{
+			// ReSharper disable TooWideLocalVariableScope
 			Bitmap     pixelMap = null;
 			BitmapData bmpData  = null;
 			int        stride;
 			short      h;
 			var        pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
+			// ReSharper restore TooWideLocalVariableScope
 
 			try {
 				//Get image width and height
@@ -93,11 +95,10 @@ namespace WebPWrapper
 		/// <returns>Bitmap with the WebP image</returns>
 		public static Bitmap Decode(byte[] rawWebP, WebPDecoderOptions options)
 		{
-			Bitmap        pixelMap   = null;
-			VP8StatusCode result;
-			var           config     = new WebPDecoderConfig();
-			var           pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
-			BitmapData    bmpData    = null;
+			Bitmap     pixelMap   = null;
+			var        config     = new WebPDecoderConfig();
+			var        pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
+			BitmapData bmpData    = null;
 
 			try {
 				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0) {
@@ -669,20 +670,13 @@ namespace WebPWrapper
 				Array.Copy(dataWebp, rawWebP, size);
 #endif
 
-				//Remove compression data
-#if UNSAFE
-				Marshal.FreeHGlobal(dataWebpPtr);
-				dataWebpPtr = IntPtr.Zero;
-#else
-				pinnedArrayHandle.Free();
-#endif
-
 				//Show statistics
 				if (info) {
 					stats = (WebPAuxStats)Marshal.PtrToStructure(ptrStats, typeof(WebPAuxStats));
 				}
 				return rawWebP;
 			} finally {
+				//Remove compression data
 #if UNSAFE
 				if (dataWebpPtr != IntPtr.Zero) {
 					Marshal.FreeHGlobal(dataWebpPtr);
@@ -731,14 +725,13 @@ namespace WebPWrapper
 #else
 		private int MyWriter([In] IntPtr data, UIntPtr dataSize, ref WebPPicture picture)
 		{
-			//UnsafeNativeMethods.CopyMemory(picture.custom_ptr, data, (uint)data_size);
-			var size = (int)dataSize;
-			var buffer = new byte[size];
-			Marshal.Copy(data, buffer, 0, size);
-			Marshal.Copy(buffer, 0, picture.custom_ptr, size);
+			UnsafeNativeMethods.CopyMemory(picture.custom_ptr, data, (uint)dataSize);
 
-			//picture.custom_ptr = IntPtr.Add(picture.custom_ptr, (int)data_size);   //Only in .NET > 4.0
+#if NET40 || NET46 || NETCOREAPP
+			picture.custom_ptr = IntPtr.Add(picture.custom_ptr, (int)dataSize);
+#else
 			picture.custom_ptr = new IntPtr(picture.custom_ptr.ToInt64() + (int)dataSize);
+#endif
 			return 1;
 		}
 #endif
@@ -758,12 +751,14 @@ namespace WebPWrapper
 
 		private static Bitmap GetThumbnail(byte[] rawWebP, short width, short height, bool fancy)
 		{
+			// ReSharper disable TooWideLocalVariableScope
 			Bitmap     pixelMap = null;
 			BitmapData bmpData  = null;
 			IntPtr     ptrRawWebP;
 			bool       blnAlpha;
 			var        pinnedWebP = GCHandle.Alloc(rawWebP, GCHandleType.Pinned);
 			var        config     = new WebPDecoderConfig();
+			// ReSharper restore TooWideLocalVariableScope
 
 			try {
 				if (UnsafeNativeMethods.WebPInitDecoderConfig(ref config) == 0) {
