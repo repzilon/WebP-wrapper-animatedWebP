@@ -25,7 +25,7 @@ namespace WebPTest
 				this.Text = Application.ProductName + (IntPtr.Size == 8 ? " x64 v" : " x86 v") + Application.ProductVersion +
 				 " (libwebp v" + WebP.GetVersion() + ")";
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + "\r\nIn WebPExample.WebPExample_Load", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				ErrorBox(ex, "WebPExample_Load");
 			}
 		}
 		#endregion
@@ -62,7 +62,7 @@ namespace WebPTest
 					}
 				}
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + "\r\nIn WebPExample.buttonLoad_Click", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				ErrorBox(ex, "ButtonLoad_Click");
 			}
 		}
 
@@ -80,7 +80,7 @@ namespace WebPTest
 					}
 				}
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + "\r\nIn WebPExample.buttonThumbnail_Click", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				ErrorBox(ex, "ButtonThumbnail_Click");
 			}
 		}
 
@@ -111,7 +111,7 @@ namespace WebPTest
 					}
 				}
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + "\r\nIn WebPExample.buttonCrop_Click", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				ErrorBox(ex, "ButtonCropFlip_Click");
 			}
 		}
 
@@ -176,7 +176,7 @@ namespace WebPTest
 
 				MessageBox.Show("End of Test");
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + "\r\nIn WebPExample.buttonSave_Click", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				ErrorBox(ex, "ButtonSave_Click");
 			}
 		}
 
@@ -211,7 +211,7 @@ namespace WebPTest
 					}
 				}
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + "\r\nIn WebPExample.buttonMeasure_Click", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				ErrorBox(ex, "ButtonMeasure_Click");
 			}
 		}
 
@@ -235,8 +235,7 @@ namespace WebPTest
 					}
 				}
 			} catch (Exception ex) {
-				MessageBox.Show(ex.Message + nl + "In WebPExample.buttonInfo_Click", "Error", MessageBoxButtons.OK,
-					MessageBoxIcon.Error);
+				ErrorBox(ex, "ButtonInfo_Click");
 			}
 		}
 		#endregion
@@ -266,6 +265,11 @@ namespace WebPTest
 							"Filter level 1: " + stats.segment_level_segments1 + " residuals bytes\n" +
 							"Filter level 2: " + stats.segment_level_segments2 + " residuals bytes\n" +
 							"Filter level 3: " + stats.segment_level_segments3 + " residuals bytes\n", "Compression statistics");
+		}
+
+		private static void ErrorBox(Exception ex, string methodName)
+		{
+			MessageBox.Show(ex.Message + Environment.NewLine + "In WebPExample." + methodName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 		}
 	}
 }
