@@ -5,8 +5,6 @@ VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebPWrapper-Sdk", "WebPWrapper\WebPWrapper-Sdk.csproj", "{052564A1-DD53-4B1C-9B2C-BE0F9CE23A3E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebPDemo-Sdk", "WebPTest\WebPDemo-Sdk.csproj", "{0A916B9F-6F1D-412B-913D-24567713CDE3}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebP42-Sdk", "WebP42\WebP42-Sdk.csproj", "{5AD52F53-E73B-40CF-82B2-CF60B933FCB4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7218A6E0-7E7E-413A-B5AF-E1FEBFC239D8}"
@@ -15,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebPWrapperLib-Sdk", "WebPWrapperLib\WebPWrapperLib-Sdk.csproj", "{935F7370-4266-43D1-B907-1322BDBCD6ED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebPDemo-Sdk", "WebPDemo\WebPDemo-Sdk.csproj", "{21B9BD33-6A3D-34EF-F8BB-D1F4BCAF5E0C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,10 +26,6 @@ Global
 		{052564A1-DD53-4B1C-9B2C-BE0F9CE23A3E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{052564A1-DD53-4B1C-9B2C-BE0F9CE23A3E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{052564A1-DD53-4B1C-9B2C-BE0F9CE23A3E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0A916B9F-6F1D-412B-913D-24567713CDE3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0A916B9F-6F1D-412B-913D-24567713CDE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0A916B9F-6F1D-412B-913D-24567713CDE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0A916B9F-6F1D-412B-913D-24567713CDE3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5AD52F53-E73B-40CF-82B2-CF60B933FCB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5AD52F53-E73B-40CF-82B2-CF60B933FCB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5AD52F53-E73B-40CF-82B2-CF60B933FCB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -38,6 +34,10 @@ Global
 		{935F7370-4266-43D1-B907-1322BDBCD6ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{935F7370-4266-43D1-B907-1322BDBCD6ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{935F7370-4266-43D1-B907-1322BDBCD6ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21B9BD33-6A3D-34EF-F8BB-D1F4BCAF5E0C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21B9BD33-6A3D-34EF-F8BB-D1F4BCAF5E0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21B9BD33-6A3D-34EF-F8BB-D1F4BCAF5E0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21B9BD33-6A3D-34EF-F8BB-D1F4BCAF5E0C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
