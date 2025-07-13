@@ -13,6 +13,19 @@
     <NoWarn>NETSDK1138;NU1902;NU1903</NoWarn>
 	<DebugType>portable</DebugType>
 	<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<Title>WebP Wrapper</Title>
+	<Authors>Repzilon</Authors>
+	<Company>(none)</Company>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryType>git</RepositoryType>
+	<PackageTags>webp</PackageTags>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageIcon>webplogo.png</PackageIcon>
+	<PackageProjectUrl>https://github.com/repzilon/WebP-wrapper-animatedWebP/tree/repzilon</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/repzilon/WebP-wrapper-animatedWebP.git</RepositoryUrl>
+	<Description>The most complete wrapper for libwebp in C# with animated WebP support.</Description>
+	<Copyright>© 2012-2019 Jose M. Piñeiro, © 2021, 2025 Repzilon, © 2022 thomas694, © 2023 russaa</Copyright>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="x64\libsharpyuv.dll">
@@ -51,5 +64,15 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net6.0-windows'">
     <PackageReference Include="System.Drawing.Common" Version="[8.0.17]" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\webplogo.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 </Project>

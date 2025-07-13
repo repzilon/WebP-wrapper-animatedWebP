@@ -55,15 +55,13 @@ The code is commented and includes simple examples for using the wrapper.
 ## Decompress Functions:
 Load WebP image for WebP file
 ```C#
-using (WebP webp = new WebP())
-  Bitmap bmp = webp.Load("test.webp");
+Bitmap bmp = WebP.Load("test.webp");
 ```
 
 Decode WebP filename to bitmap and load in PictureBox container
 ```C#
 byte[] rawWebP = File.ReadAllBytes("test.webp");
-using (WebP webp = new WebP())
-  this.pictureBox.Image = webp.Decode(rawWebP);
+this.pictureBox.Image = WebP.Decode(rawWebP);
 ```
 
 Advanced decode WebP filename to bitmap and load in PictureBox container
@@ -72,36 +70,30 @@ byte[] rawWebP = File.ReadAllBytes("test.webp");
 WebPDecoderOptions decoderOptions = new WebPDecoderOptions();
 decoderOptions.use_threads = 1;     //Use multhreading
 decoderOptions.flip = 1;   			//Flip the image
-using (WebP webp = new WebP())
-  this.pictureBox.Image = webp.Decode(rawWebP, decoderOptions);
+this.pictureBox.Image = WebP.Decode(rawWebP, decoderOptions);
 ```
 
 Get thumbnail with 200x150 pixels in fast/low quality mode
 ```C#
-using (WebP webp = new WebP())
-	this.pictureBox.Image = webp.GetThumbnailFast(rawWebP, 200, 150);
+this.pictureBox.Image = WebP.GetThumbnailFast(rawWebP, 200, 150);
 ```
 
 Get thumbnail with 200x150 pixels in slow/high quality mode
 ```C#
-using (WebP webp = new WebP())
-	this.pictureBox.Image = webp.GetThumbnailQuality(rawWebP, 200, 150);
+this.pictureBox.Image = WebP.GetThumbnailQuality(rawWebP, 200, 150);
 ```
 
 
 ## Compress Functions:
 Save bitmap to WebP file
 ```C#
-Bitmap bmp = new Bitmap("test.jpg");
-using (WebP webp = new WebP())
-  webp.Save(bmp, 80, "test.webp");
+webp.Save(bmp, 80, "test.webp");
 ```
 
 Encode to memory buffer in lossy mode with quality 75 and save to file
 ```C#
 byte[] rawWebP = File.ReadAllBytes("test.jpg");
-using (WebP webp = new WebP())
-  rawWebP = webp.EncodeLossy(bmp, 75);
+rawWebP = WebP.EncodeLossy(bmp, 75);
 File.WriteAllBytes("test.webp", rawWebP); 
 ```
 
@@ -116,16 +108,16 @@ File.WriteAllBytes("test.webp", rawWebP);
 Encode to memory buffer in lossy mode with quality 75, speed 9 and get information. Save to file
 ```C#
 byte[] rawWebP = File.ReadAllBytes("test.jpg");
+WebPAuxStats stats;
 using (WebP webp = new WebP())
-  rawWebP = webp.EncodeLossy(bmp, 75, 9, true);
+  rawWebP = webp.EncodeLossy(bmp, 75, 9, out stats);
 File.WriteAllBytes("test.webp", rawWebP); 
 ```
 
 Encode to memory buffer in lossless mode and save to file
 ```C#
 byte[] rawWebP = File.ReadAllBytes("test.jpg");
-using (WebP webp = new WebP())
-  rawWebP = webp.EncodeLossless(bmp);
+rawWebP = WebP.EncodeLossless(bmp);
 File.WriteAllBytes("test.webp", rawWebP); 
 ```
 
@@ -145,23 +137,21 @@ using (WebP webp = new WebP())
 File.WriteAllBytes("test.webp", rawWebP); 
 ```
 
-## Another Functions:	
+## Other Functions:	
 Get version of libwebp.dll
 ```C#
-using (WebP webp = new WebP())
-  string version = "libwebp.dll v" + webp.GetVersion();
+string version = "libwebp.dll v" + WebP.GetVersion();
 ```
 
 Get info from WebP file
 ```C#
 byte[] rawWebp = File.ReadAllBytes(pathFileName);
-using (WebP webp = new WebP())
-  webp.GetInfo(rawWebp, out width, out height, out has_alpha, out has_animation, out format);
-MessageBox.Show("Width: " + width + "\n" +
-                "Height: " + height + "\n" +
-                "Has alpha: " + has_alpha + "\n" +
-                "Is animation: " + has_animation + "\n" +
-                "Format: " + format);
+var info = WebP.GetInfo(pathFileName);
+MessageBox.Show("Width: " + info.Width + "\n" +
+				"Height: " + info.Height + "\n" +
+				"Has alpha: " + info.HasAlpha + "\n" +
+				"Is animation: " + info.IsAnimated + "\n" +
+				"Format: " + info.Format);
 ```
 
 Get PSNR, SSIM or LSIM distortion metric between two pictures
@@ -169,10 +159,7 @@ Get PSNR, SSIM or LSIM distortion metric between two pictures
 int metric = 0;  //0 = PSNR, 1= SSIM, 2=LSIM
 Bitmap bmp1 = Bitmap.FromFile("image1.png");
 Bitmap bmp2 = Bitmap.FromFile("image2.png");
-using (WebP webp = new WebP())
-	result = webp.GetPictureDistortion(source, reference, metric);
-	                    MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "PSNR");
-
+var result = WebP.GetPictureDistortion(source, reference, metric);
 MessageBox.Show("Red: " + result[0] + dB\n" +
                 "Green: " + result[1] + "dB\n" +
                 "Blue: " + result[2] + "dB\n" +
