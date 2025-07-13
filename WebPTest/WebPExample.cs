@@ -129,26 +129,31 @@ namespace WebPTest
 					Bitmap bmp = (Bitmap)pictureBox.Image;
 
 					//Test simple encode in lossy mode in memory with quality 75
+					var start = DateTime.UtcNow;
 					var rawWebP = WebP.EncodeLossy(bmp, 75);
-					SaveWithSummary(rawWebP, "SimpleLossy.webp", "Simple lossy (quality 75)");
+					SaveWithSummary(rawWebP, DateTime.UtcNow - start, "SimpleLossy.webp", "Simple lossy (quality 75)");
 
 					//Test simple encode in lossless mode in memory
+					start = DateTime.UtcNow;
 					rawWebP = WebP.EncodeLossless(bmp);
-					SaveWithSummary(rawWebP, "SimpleLossless.webp", "Simple lossless");
+					SaveWithSummary(rawWebP, DateTime.UtcNow - start, "SimpleLossless.webp", "Simple lossless");
 
 					//Test encode in lossy mode in memory with quality 75 and speed 9
 					WebPAuxStats stats;
+					start = DateTime.UtcNow;
 					using (WebP webp = new WebP()) {
 						rawWebP = webp.EncodeLossy(bmp, 75, 9, out stats);
 					}
+					var elapsed = DateTime.UtcNow - start;
 					ShowCompressionStatistics(stats, bmp);
-					SaveWithSummary(rawWebP, "AdvanceLossy.webp", "Advance lossy (quality 75, speed 9)");
+					SaveWithSummary(rawWebP, elapsed, "AdvanceLossy.webp", "Advance lossy (quality 75, speed 9)");
 
 					//Test advance encode lossless mode in memory with speed 9
+					start = DateTime.UtcNow;
 					using (WebP webp = new WebP()) {
 						rawWebP = webp.EncodeLossless(bmp, 9);
 					}
-					SaveWithSummary(rawWebP, "AdvanceLossless.webp", "Advance lossless");
+					SaveWithSummary(rawWebP, DateTime.UtcNow - start, "AdvanceLossless.webp", "Advance lossless");
 
 					//Test encode near lossless mode in memory with quality 40 and speed 9
 					// quality 100: No-loss (bit-stream same as -lossless).
@@ -156,12 +161,13 @@ namespace WebPTest
 					// quality 60: Very high PSNR (around 48dB) and gets an additional 20%-25% size reduction over WebP-lossless image.
 					// quality 40: High PSNR (around 42dB) and gets an additional 30-35% size reduction over WebP-lossless image.
 					// quality 20 (and below): Moderate PSNR (around 36dB) and gets an additional 40-50% size reduction over WebP-lossless image.
+					start = DateTime.UtcNow;
 					using (WebP webp = new WebP()) {
 						rawWebP = webp.EncodeNearLossless(bmp, 40, 9);
 					}
-					SaveWithSummary(rawWebP, "NearLossless.webp", "Near lossless (quality 40, speed 9)");
+					SaveWithSummary(rawWebP, DateTime.UtcNow - start, "NearLossless.webp", "Near lossless (quality 40, speed 9)");
 
-					MessageBox.Show("End of Test");
+					MessageBox.Show("End of Save test");
 				} catch (Exception ex) {
 					ErrorBox(ex, "ButtonSave_Click");
 				}
@@ -181,16 +187,18 @@ namespace WebPTest
 						openFileDialog.Filter = "WebP images (*.webp)|*.webp";
 						openFileDialog.FileName = "";
 						if (openFileDialog.ShowDialog() == DialogResult.OK) {
+							var message = new StringBuilder(300);
+							TimeSpan elapsed;
 							//Load Bitmaps
 							var source = (Bitmap)this.pictureBox.Image;
-							var reference = WebP.Load(openFileDialog.FileName);
-							var message = new StringBuilder(300);
-
-							AppendMetric(message, "PSNR", WebP.GetPictureDistortion(source, reference, DistortionMetric.PeakSignalNoiseRatio));
-							AppendMetric(message, "SSIM", WebP.GetPictureDistortion(source, reference, DistortionMetric.StructuralSimilarity));
-							AppendMetric(message, "LSIM", WebP.GetPictureDistortion(source, reference, DistortionMetric.LightweightSimilarity));
-
-							MessageBox.Show(message.ToString(), "Image similarity with " + openFileDialog.SafeFileName);
+							using (var reference = WebP.Load(openFileDialog.FileName)) {
+								var start = DateTime.UtcNow;
+								AppendMetric(message, "PSNR", WebP.GetPictureDistortion(source, reference, DistortionMetric.PeakSignalNoiseRatio));
+								AppendMetric(message, "SSIM", WebP.GetPictureDistortion(source, reference, DistortionMetric.StructuralSimilarity));
+								AppendMetric(message, "LSIM", WebP.GetPictureDistortion(source, reference, DistortionMetric.LightweightSimilarity));
+								elapsed = DateTime.UtcNow - start;
+							}
+							MessageBox.Show(message.ToString(), "Image similarity with " + openFileDialog.SafeFileName + " in " + elapsed.TotalSeconds.ToString("g4") + " s");
 						}
 					}
 				} catch (Exception ex) {
@@ -261,11 +269,11 @@ namespace WebPTest
 			MessageBox.Show(text, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
 		}
 
-		private static void SaveWithSummary(byte[] rawWebP, string fileName, string caption)
+		private static void SaveWithSummary(byte[] rawWebP, TimeSpan elapsed, string fileName, string caption)
 		{
 			string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
 			File.WriteAllBytes(filePath, rawWebP);
-			MessageBox.Show("Made " + filePath + " of " + rawWebP.Length + " bytes.", caption);
+			MessageBox.Show("Made " + filePath + " of " + rawWebP.Length + " bytes in " + elapsed.TotalSeconds.ToString("g4") + " s.", caption);
 		}
 
 		private static void AppendMetric(StringBuilder message, string metric, float[] result)
@@ -273,7 +281,7 @@ namespace WebPTest
 			var karChannels = new string[] { "R", "G", "B", "Alpha", "All" };
 			message.Append(metric).Append(':');
 			for (int i = 0; i < 5; i++) {
-				message.Append(' ').Append(karChannels[i]).Append(' ').Append(result[i].ToString("g4")).Append(" dB");
+				message.Append("  ").Append(karChannels[i]).Append(' ').Append(result[i].ToString("g4")).Append(" dB");
 			}
 			message.Append('.').AppendLine();
 		}
