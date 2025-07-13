@@ -16,7 +16,7 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug\classic_net20\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <LangVersion>3</LangVersion>
   </PropertyGroup>
@@ -24,7 +24,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>full</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\Release\classic_net20\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <LangVersion>3</LangVersion>
   </PropertyGroup>
