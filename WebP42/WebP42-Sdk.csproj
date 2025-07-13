@@ -14,7 +14,7 @@
     <NoWarn>NETSDK1138;NU1902;NU1903</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\WebPWrapper\WebPWrapper-Sdk.csproj" />
+    <ProjectReference Include="..\WebPWrapperLib\WebPWrapperLib-Sdk.csproj" />
   </ItemGroup>
   <ProjectExtensions>
     <MonoDevelop>

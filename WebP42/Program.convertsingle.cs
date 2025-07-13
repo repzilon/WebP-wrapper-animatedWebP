@@ -4,7 +4,7 @@
 //  Author:
 //       René Rhéaume <repzilon@users.noreply.github.com>
 //
-//  Copyright (c) 2023 René Rhéaume
+//  Copyright (c) 2023, 2025 René Rhéaume
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -81,25 +81,25 @@ namespace WebP42
 				}
 
 #if LossyExperiment
-				WebPAuxStats lossyStats;
 				List<CompressionTrial> lossyTrials = new List<CompressionTrial>();
-				CompressionTrial ctLossy = TryLossy(bmpGdiplus, 100, lossyTrials, out lossyStats);
+				CompressionTrial ctLossy = TryLossy(bmpGdiplus, 100, lossyTrials);
 				bool blnCandidateForLossy = ctLossy.IsVisuallyLossless();
 #endif
 #if NearLosslessExperiment
-				WebPAuxStats nearLosslessStats;
 				List<CompressionTrial> nearLosslessTrials = new List<CompressionTrial>();
-				CompressionTrial ctNear = TryNearLossless(bmpGdiplus, 80, nearLosslessTrials, out nearLosslessStats);
+				CompressionTrial ctNear = TryNearLossless(bmpGdiplus, 80, nearLosslessTrials);
 				bool blnCandidateForNearLossless = ctNear.IsVisuallyLossless();
 #endif
 
 				// TODO : Perform some kind of binary search. Start with level 0, 4 and 9, then refine
 				CompressionTrial[] losslessTrials = new CompressionTrial[9 + 1];
-				for (byte i = 0; i <= 9; i++) {
-					DateTime dtmStart = DateTime.UtcNow;
-					byte[] bytarCoded = WebP.EncodeLossless(bmpGdiplus, i);
-					TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
-					losslessTrials[i] = new CompressionTrial() { CompressedData = bytarCoded, CompressionLevel = i, TimeTook = tsDuration };
+				using (var webp = new WebP()) {
+					for (byte i = 0; i <= 9; i++) {
+						DateTime dtmStart = DateTime.UtcNow;
+						byte[] bytarCoded = webp.EncodeLossless(bmpGdiplus, i);
+						TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
+						losslessTrials[i] = new CompressionTrial() { CompressedData = bytarCoded, CompressionLevel = i, TimeTook = tsDuration };
+					}
 				}
 
 				CompressionTrial? nctBestLossless = FastestOfSmallest(lngOrigSize, losslessTrials);
@@ -114,14 +114,14 @@ namespace WebP42
 				if (blnCandidateForLossy) {
 					// TODO : Go by steps of 4, then refine
 					for (byte q = 99; q >= 1 && ctLossy.IsVisuallyLossless(); q--) {
-						ctLossy = TryLossy(bmpGdiplus, q, lossyTrials, out lossyStats);
+						ctLossy = TryLossy(bmpGdiplus, q, lossyTrials);
 					}
 					if (lossyTrials.Count >= 2) {
 						var ctBestLossy = lossyTrials[lossyTrials.Count - 2];
 						var q = ctBestLossy.Quality;
 						lossyTrials.Clear();
 						for (byte s = 0; s <= 9; s++) {
-							ctLossy = TryLossy(bmpGdiplus, q, s, lossyTrials, out lossyStats);
+							ctLossy = TryLossy(bmpGdiplus, q, s, lossyTrials);
 						}
 						nctBestLossy = FastestOfSmallest(lngOrigSize, lossyTrials);
 						if (nctBestLossy != null) {
@@ -135,7 +135,7 @@ namespace WebP42
 				CompressionTrial? nctBestNear = null;
 				if (blnCandidateForNearLossless) {
 					for (short q = 60; q >= 0 && ctNear.IsVisuallyLossless(); q -= 20) {
-						ctNear = TryNearLossless(bmpGdiplus, (byte)q, nearLosslessTrials, out nearLosslessStats);
+						ctNear = TryNearLossless(bmpGdiplus, (byte)q, nearLosslessTrials);
 					}
 					if (nearLosslessTrials.Count >= 2) {
 						var ctBestNear = nearLosslessTrials[nearLosslessTrials.Count - 1];
@@ -145,7 +145,7 @@ namespace WebP42
 						var q = ctBestNear.Quality;
 						nearLosslessTrials.Clear();
 						for (byte s = 0; s <= 9; s++) {
-							ctNear = TryNearLossless(bmpGdiplus, q, s, nearLosslessTrials, out nearLosslessStats);
+							ctNear = TryNearLossless(bmpGdiplus, q, s, nearLosslessTrials);
 						}
 						nctBestNear = FastestOfSmallest(lngOrigSize, nearLosslessTrials);
 						if (nctBestNear != null) {
@@ -272,32 +272,36 @@ namespace WebP42
 		}
 
 #if LossyExperiment
-		private static CompressionTrial TryLossy(Bitmap original, byte quality, ICollection<CompressionTrial> trialInfo, out WebPAuxStats emptyReusableStats)
+		private static CompressionTrial TryLossy(Bitmap original, byte quality, ICollection<CompressionTrial> trialInfo)
 		{
-			return TryLossy(original, quality, 9, trialInfo, out emptyReusableStats);
+			return TryLossy(original, quality, 9, trialInfo);
 		}
 
-		private static CompressionTrial TryLossy(Bitmap original, byte quality, byte speed, ICollection<CompressionTrial> trialInfo, out WebPAuxStats emptyReusableStats)
+		private static CompressionTrial TryLossy(Bitmap original, byte quality, byte speed, ICollection<CompressionTrial> trialInfo)
 		{
 			DateTime dtmStart = DateTime.UtcNow;
-			byte[] bytarLossy = WebP.EncodeLossy(original, quality, speed, false, out emptyReusableStats);
-			TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
-			return RateNonLosslessTrial(original, quality, speed, trialInfo, bytarLossy, tsDuration);
+			using (var webp = new WebP()) {
+				byte[] bytarLossy = webp.EncodeLossy(original, quality, speed);
+				TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
+				return RateNonLosslessTrial(original, quality, speed, trialInfo, bytarLossy, tsDuration);
+			}
 		}
 #endif
 
 #if NearLosslessExperiment
-		private static CompressionTrial TryNearLossless(Bitmap original, byte quality, ICollection<CompressionTrial> trialInfo, out WebPAuxStats emptyReusableStats)
+		private static CompressionTrial TryNearLossless(Bitmap original, byte quality, ICollection<CompressionTrial> trialInfo)
 		{
-			return TryNearLossless(original, quality, 9, trialInfo, out emptyReusableStats);
+			return TryNearLossless(original, quality, 9, trialInfo);
 		}
 
-		private static CompressionTrial TryNearLossless(Bitmap original, byte quality, byte speed, ICollection<CompressionTrial> trialInfo, out WebPAuxStats emptyReusableStats)
+		private static CompressionTrial TryNearLossless(Bitmap original, byte quality, byte speed, ICollection<CompressionTrial> trialInfo)
 		{
 			DateTime dtmStart = DateTime.UtcNow;
-			byte[] bytarLossy = WebP.EncodeNearLossless(original, quality, speed, false, out emptyReusableStats);
-			TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
-			return RateNonLosslessTrial(original, quality, speed, trialInfo, bytarLossy, tsDuration);
+			using (var webp = new WebP()) {
+				byte[] bytarLossy = webp.EncodeNearLossless(original, quality, speed);
+				TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
+				return RateNonLosslessTrial(original, quality, speed, trialInfo, bytarLossy, tsDuration);
+			}
 		}
 #endif
 
@@ -306,8 +310,8 @@ namespace WebP42
 		{
 			using (Bitmap bmpLossy = WebP.Decode(bytarLossy)) {
 				// TODO : use PSNR-HVM-S to compute distortion
-				float[] sngarSsim = WebP.GetPictureDistortion(bmpLossy, original, DistorsionMetric.StructuralSimilarity);
-				float[] sngarPsnr = WebP.GetPictureDistortion(bmpLossy, original, DistorsionMetric.PeakSignalNoiseRatio);
+				float[] sngarSsim = WebP.GetPictureDistortion(bmpLossy, original, DistortionMetric.StructuralSimilarity);
+				float[] sngarPsnr = WebP.GetPictureDistortion(bmpLossy, original, DistortionMetric.PeakSignalNoiseRatio);
 				CompressionTrial trial = new CompressionTrial() { CompressedData = bytarLossy, CompressionLevel = speed, Quality = quality, TimeTook = tsDuration, PictureSsim = sngarSsim[4], AlphaSsim = sngarSsim[3], PicturePsnr = sngarPsnr[4], AlphaPsnr = sngarPsnr[3] };
 				trialInfo.Add(trial);
 				return trial;
