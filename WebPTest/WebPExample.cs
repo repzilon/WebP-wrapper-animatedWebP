@@ -5,6 +5,7 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Text;
 using System.Windows.Forms;
 using WebPWrapper;
 
@@ -121,7 +122,7 @@ namespace WebPTest
 		private void ButtonSave_Click(object sender, EventArgs e)
 		{
 			if (this.pictureBox.Image == null) {
-				MessageBox.Show("Please, load an image first.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				WarningBox("Please, load an image first.");
 			} else {
 				try {
 					//get the picture box image
@@ -172,33 +173,29 @@ namespace WebPTest
 		/// </summary>
 		private void ButtonMeasure_Click(object sender, EventArgs e)
 		{
-			try {
-				if (this.pictureBox.Image == null) {
-					MessageBox.Show("Please, load an reference image first");
-				}
-				using (OpenFileDialog openFileDialog = new OpenFileDialog()) {
-					openFileDialog.Filter = "WebP images (*.webp)|*.webp";
-					openFileDialog.FileName = "";
-					if (openFileDialog.ShowDialog() == DialogResult.OK) {
-						//Load Bitmaps
-						var source = (Bitmap)this.pictureBox.Image;
-						var reference = WebP.Load(openFileDialog.FileName);
+			if (this.pictureBox.Image == null) {
+				WarningBox("Please, load an reference image first.");
+			} else {
+				try {
+					using (OpenFileDialog openFileDialog = new OpenFileDialog()) {
+						openFileDialog.Filter = "WebP images (*.webp)|*.webp";
+						openFileDialog.FileName = "";
+						if (openFileDialog.ShowDialog() == DialogResult.OK) {
+							//Load Bitmaps
+							var source = (Bitmap)this.pictureBox.Image;
+							var reference = WebP.Load(openFileDialog.FileName);
+							var message = new StringBuilder(300);
 
-						//Measure PSNR
-						var result = WebP.GetPictureDistortion(source, reference, DistortionMetric.PeakSignalNoiseRatio);
-						MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "PSNR");
+							AppendMetric(message, "PSNR", WebP.GetPictureDistortion(source, reference, DistortionMetric.PeakSignalNoiseRatio));
+							AppendMetric(message, "SSIM", WebP.GetPictureDistortion(source, reference, DistortionMetric.StructuralSimilarity));
+							AppendMetric(message, "LSIM", WebP.GetPictureDistortion(source, reference, DistortionMetric.LightweightSimilarity));
 
-						//Measure SSIM
-						result = WebP.GetPictureDistortion(source, reference, DistortionMetric.StructuralSimilarity);
-						MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "SSIM");
-
-						//Measure LSIM
-						result = WebP.GetPictureDistortion(source, reference, DistortionMetric.LightweightSimilarity);
-						MessageBox.Show("Red: " + result[0] + "dB.\nGreen: " + result[1] + "dB.\nBlue: " + result[2] + "dB.\nAlpha: " + result[3] + "dB.\nAll: " + result[4] + "dB.", "LSIM");
+							MessageBox.Show(message.ToString(), "Image similarity with " + openFileDialog.SafeFileName);
+						}
 					}
+				} catch (Exception ex) {
+					ErrorBox(ex, "ButtonMeasure_Click");
 				}
-			} catch (Exception ex) {
-				ErrorBox(ex, "ButtonMeasure_Click");
 			}
 		}
 
@@ -259,11 +256,26 @@ namespace WebPTest
 			MessageBox.Show(ex.Message + Environment.NewLine + "In WebPExample." + methodName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 		}
 
+		private static void WarningBox(string text)
+		{
+			MessageBox.Show(text, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+		}
+
 		private static void SaveWithSummary(byte[] rawWebP, string fileName, string caption)
 		{
 			string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
 			File.WriteAllBytes(filePath, rawWebP);
 			MessageBox.Show("Made " + filePath + " of " + rawWebP.Length + " bytes.", caption);
+		}
+
+		private static void AppendMetric(StringBuilder message, string metric, float[] result)
+		{
+			var karChannels = new string[] { "R", "G", "B", "Alpha", "All" };
+			message.Append(metric).Append(':');
+			for (int i = 0; i < 5; i++) {
+				message.Append(' ').Append(karChannels[i]).Append(' ').Append(result[i].ToString("g4")).Append(" dB");
+			}
+			message.Append('.').AppendLine();
 		}
 	}
 }
