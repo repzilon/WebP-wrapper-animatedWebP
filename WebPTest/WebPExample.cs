@@ -120,63 +120,50 @@ namespace WebPTest
 		/// </summary>
 		private void ButtonSave_Click(object sender, EventArgs e)
 		{
-			Control.CheckForIllegalCrossThreadCalls = false;
-			byte[] rawWebP;
+			if (this.pictureBox.Image == null) {
+				MessageBox.Show("Please, load an image first.", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+			} else {
+				try {
+					//get the picture box image
+					Bitmap bmp = (Bitmap)pictureBox.Image;
 
-			try {
-				if (this.pictureBox.Image == null) {
-					MessageBox.Show("Please, load an image first");
+					//Test simple encode in lossy mode in memory with quality 75
+					var rawWebP = WebP.EncodeLossy(bmp, 75);
+					SaveWithSummary(rawWebP, "SimpleLossy.webp", "Simple lossy (quality 75)");
+
+					//Test simple encode in lossless mode in memory
+					rawWebP = WebP.EncodeLossless(bmp);
+					SaveWithSummary(rawWebP, "SimpleLossless.webp", "Simple lossless");
+
+					//Test encode in lossy mode in memory with quality 75 and speed 9
+					WebPAuxStats stats;
+					using (WebP webp = new WebP()) {
+						rawWebP = webp.EncodeLossy(bmp, 75, 9, out stats);
+					}
+					ShowCompressionStatistics(stats, bmp);
+					SaveWithSummary(rawWebP, "AdvanceLossy.webp", "Advance lossy (quality 75, speed 9)");
+
+					//Test advance encode lossless mode in memory with speed 9
+					using (WebP webp = new WebP()) {
+						rawWebP = webp.EncodeLossless(bmp, 9);
+					}
+					SaveWithSummary(rawWebP, "AdvanceLossless.webp", "Advance lossless");
+
+					//Test encode near lossless mode in memory with quality 40 and speed 9
+					// quality 100: No-loss (bit-stream same as -lossless).
+					// quality 80: Very very high PSNR (around 54dB) and gets an additional 5-10% size reduction over WebP-lossless image.
+					// quality 60: Very high PSNR (around 48dB) and gets an additional 20%-25% size reduction over WebP-lossless image.
+					// quality 40: High PSNR (around 42dB) and gets an additional 30-35% size reduction over WebP-lossless image.
+					// quality 20 (and below): Moderate PSNR (around 36dB) and gets an additional 40-50% size reduction over WebP-lossless image.
+					using (WebP webp = new WebP()) {
+						rawWebP = webp.EncodeNearLossless(bmp, 40, 9);
+					}
+					SaveWithSummary(rawWebP, "NearLossless.webp", "Near lossless (quality 40, speed 9)");
+
+					MessageBox.Show("End of Test");
+				} catch (Exception ex) {
+					ErrorBox(ex, "ButtonSave_Click");
 				}
-
-				//get the picture box image
-				Bitmap bmp = (Bitmap)pictureBox.Image;
-
-				//Test simple encode in lossy mode in memory with quality 75
-				string lossyFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SimpleLossy.webp");
-				rawWebP = WebP.EncodeLossy(bmp, 75);
-				File.WriteAllBytes(lossyFileName, rawWebP);
-				MessageBox.Show("Made " + lossyFileName, "Simple lossy");
-
-				//Test simple encode in lossless mode in memory
-				string simpleLosslessFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SimpleLossless.webp");
-				rawWebP = WebP.EncodeLossless(bmp);
-				File.WriteAllBytes(simpleLosslessFileName, rawWebP);
-				MessageBox.Show("Made " + simpleLosslessFileName, "Simple lossless");
-
-				//Test encode in lossy mode in memory with quality 75 and speed 9
-				string advanceLossyFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AdvanceLossy.webp");
-				WebPAuxStats stats;
-				using (WebP webp = new WebP()) {
-					rawWebP = webp.EncodeLossy(bmp, 71, 9, out stats);
-				}
-				ShowCompressionStatistics(stats, bmp);
-				File.WriteAllBytes(advanceLossyFileName, rawWebP);
-				MessageBox.Show("Made " + advanceLossyFileName, "Advance lossy");
-
-				//Test advance encode lossless mode in memory with speed 9
-				string losslessFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AdvanceLossless.webp");
-				using (WebP webp = new WebP()) {
-					rawWebP = webp.EncodeLossless(bmp, 9);
-				}
-				File.WriteAllBytes(losslessFileName, rawWebP);
-				MessageBox.Show("Made " + losslessFileName, "Advance lossless");
-
-				//Test encode near lossless mode in memory with quality 40 and speed 9
-				// quality 100: No-loss (bit-stream same as -lossless).
-				// quality 80: Very very high PSNR (around 54dB) and gets an additional 5-10% size reduction over WebP-lossless image.
-				// quality 60: Very high PSNR (around 48dB) and gets an additional 20%-25% size reduction over WebP-lossless image.
-				// quality 40: High PSNR (around 42dB) and gets an additional 30-35% size reduction over WebP-lossless image.
-				// quality 20 (and below): Moderate PSNR (around 36dB) and gets an additional 40-50% size reduction over WebP-lossless image.
-				string nearLosslessFileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "NearLossless.webp");
-				using (WebP webp = new WebP()) {
-					rawWebP = webp.EncodeNearLossless(bmp, 40, 9);
-				}
-				File.WriteAllBytes(nearLosslessFileName, rawWebP);
-				MessageBox.Show("Made " + nearLosslessFileName, "Near lossless");
-
-				MessageBox.Show("End of Test");
-			} catch (Exception ex) {
-				ErrorBox(ex, "ButtonSave_Click");
 			}
 		}
 
@@ -270,6 +257,13 @@ namespace WebPTest
 		private static void ErrorBox(Exception ex, string methodName)
 		{
 			MessageBox.Show(ex.Message + Environment.NewLine + "In WebPExample." + methodName, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+		}
+
+		private static void SaveWithSummary(byte[] rawWebP, string fileName, string caption)
+		{
+			string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+			File.WriteAllBytes(filePath, rawWebP);
+			MessageBox.Show("Made " + filePath + " of " + rawWebP.Length + " bytes.", caption);
 		}
 	}
 }
