@@ -9,7 +9,7 @@ using System.Text;
 using System.Windows.Forms;
 using WebPWrapper;
 
-namespace WebPTest
+namespace WebPDemo
 {
 	public partial class WebPExample : Form
 	{

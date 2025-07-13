@@ -10,8 +10,8 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <DebugType>portable</DebugType>
     <UseWindowsForms>true</UseWindowsForms>
-    <RootNamespace>WebPTest</RootNamespace>
-    <AssemblyName>WebPTest</AssemblyName>
+    <RootNamespace>WebPDemo</RootNamespace>
+    <AssemblyName>WebPDemo</AssemblyName>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <NoWarn>NETSDK1138</NoWarn>
   </PropertyGroup>

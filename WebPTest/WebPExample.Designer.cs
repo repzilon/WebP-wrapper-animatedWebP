@@ -1,4 +1,4 @@
-﻿namespace WebPTest
+﻿namespace WebPDemo
 {
     partial class WebPExample
     {
