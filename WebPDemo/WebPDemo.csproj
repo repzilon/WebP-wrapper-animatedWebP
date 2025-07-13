@@ -6,8 +6,8 @@
     <ProjectGuid>{38700B2B-939E-439F-A975-E6FA91703BDB}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>WebPTest</RootNamespace>
-    <AssemblyName>WebPTest</AssemblyName>
+    <RootNamespace>WebPDemo</RootNamespace>
+    <AssemblyName>WebPDemo</AssemblyName>
     <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
