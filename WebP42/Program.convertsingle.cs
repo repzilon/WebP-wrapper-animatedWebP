@@ -29,6 +29,10 @@ using System.IO;
 using System.Runtime.InteropServices;
 using WebPWrapper;
 
+// ReSharper disable SuggestVarOrType_BuiltInTypes
+// ReSharper disable SuggestVarOrType_SimpleTypes
+#pragma warning disable IDE0007 // Use implicit type
+
 namespace WebP42
 {
 	[StructLayout(LayoutKind.Auto)]
@@ -39,6 +43,8 @@ namespace WebP42
 		public byte[] CompressedData;
 
 		public TimeSpan TimeTook;
+
+		public WebPPreset Preset;
 
 #if LossyExperiment || NearLosslessExperiment
 		public byte Quality;
@@ -56,10 +62,22 @@ namespace WebP42
 			return (PicturePsnr >= 42) && (PictureSsim >= 20) && (AlphaPsnr >= 42) && (AlphaSsim >= 20);
 		}
 #endif
+
+#if DEBUG
+		public override string ToString()
+		{
+			return String.Format("{0} {1} => {2} bytes in {3}",
+				Preset, CompressionLevel, CompressedData.Length, TimeTook);
+		}
+#endif
 	}
 
 	partial class Program
 	{
+#if LossyExperiment
+		private const WebPPreset LossyPreset = WebPPreset.Default;
+#endif
+
 		private static void ConvertSingleImage(string inputPath, string directory)
 		{
 			Bitmap bmpGdiplus = null;
@@ -92,13 +110,17 @@ namespace WebP42
 #endif
 
 				// TODO : Perform some kind of binary search. Start with level 0, 4 and 9, then refine
-				CompressionTrial[] losslessTrials = new CompressionTrial[9 + 1];
+				List<CompressionTrial> losslessTrials = new List<CompressionTrial>();
 				using (var webp = new WebP()) {
 					for (byte i = 0; i <= 9; i++) {
 						DateTime dtmStart = DateTime.UtcNow;
 						byte[] bytarCoded = webp.EncodeLossless(bmpGdiplus, i);
 						TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
-						losslessTrials[i] = new CompressionTrial() { CompressedData = bytarCoded, CompressionLevel = i, TimeTook = tsDuration };
+						losslessTrials.Add(new CompressionTrial()
+						{
+							CompressedData = bytarCoded, CompressionLevel = i, TimeTook = tsDuration,
+							Preset = WebPPreset.Default
+						});
 					}
 				}
 
@@ -109,7 +131,7 @@ namespace WebP42
 				// It's very rare to see lossy compression win over lossless when converting PNG files
 				// TODO : For heavily compressed JPEG input files, try to guess the JPEG quality index
 				// to use it with the advanced WebP setting made to mimic JPEG quality index. Of course,
-				// measure the distortion afterwards.
+				// measure the distortion afterward.
 				CompressionTrial? nctBestLossy = null;
 				if (blnCandidateForLossy) {
 					// TODO : Go by steps of 4, then refine
@@ -125,7 +147,7 @@ namespace WebP42
 						}
 						nctBestLossy = FastestOfSmallest(lngOrigSize, lossyTrials);
 						if (nctBestLossy != null) {
-							File.WriteAllBytes(inputPath + ".lossy" + nctBestLossy.Value.Quality + "z" + nctBestLossy.Value.CompressionLevel + ".webp", nctBestLossy.Value.CompressedData);
+							File.WriteAllBytes(inputPath + "." + LossyPreset.ToString().ToLowerInvariant() + nctBestLossy.Value.Quality + "z" + nctBestLossy.Value.CompressionLevel + ".webp", nctBestLossy.Value.CompressedData);
 						}
 					}
 				}
@@ -162,7 +184,8 @@ namespace WebP42
 
 					RunSummary.Accumulate(lngOrigSize, intWebpSize);
 					Console.Write("{0,10} {1,10} {2,3}% {3}\t(lossless -z {4})", lngOrigSize, intWebpSize,
-					 RunSummary.ComputePercentage(lngOrigSize, intWebpSize), RelativePath(strWebpFile, directory), nctBestLossless.Value.CompressionLevel);
+					 RunSummary.ComputePercentage(lngOrigSize, intWebpSize), RelativePath(strWebpFile, directory),
+					 nctBestLossless.Value.CompressionLevel);
 				} else {
 					RunSummary.Accumulate(lngOrigSize, lngOrigSize);
 					Console.Write("{0,10} {0,10} 100% {1}", lngOrigSize, RelativePath(inputPath, directory));
@@ -198,6 +221,7 @@ namespace WebP42
 				if (bmpGdiplus != null) {
 					bmpGdiplus.Dispose();
 				}
+				GC.Collect();
 			}
 		}
 
@@ -281,9 +305,9 @@ namespace WebP42
 		{
 			DateTime dtmStart = DateTime.UtcNow;
 			using (var webp = new WebP()) {
-				byte[] bytarLossy = webp.EncodeLossy(original, quality, speed);
+				byte[] bytarLossy = webp.EncodeLossy(original, LossyPreset, quality, speed);
 				TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
-				return RateNonLosslessTrial(original, quality, speed, trialInfo, bytarLossy, tsDuration);
+				return RateNonLosslessTrial(original, LossyPreset, quality, speed, trialInfo, bytarLossy, tsDuration);
 			}
 		}
 #endif
@@ -300,19 +324,24 @@ namespace WebP42
 			using (var webp = new WebP()) {
 				byte[] bytarLossy = webp.EncodeNearLossless(original, quality, speed);
 				TimeSpan tsDuration = DateTime.UtcNow - dtmStart;
-				return RateNonLosslessTrial(original, quality, speed, trialInfo, bytarLossy, tsDuration);
+				return RateNonLosslessTrial(original, WebPPreset.Default, quality, speed, trialInfo, bytarLossy, tsDuration);
 			}
 		}
 #endif
 
 #if LossyExperiment || NearLosslessExperiment
-		private static CompressionTrial RateNonLosslessTrial(Bitmap original, byte quality, byte speed, ICollection<CompressionTrial> trialInfo, byte[] bytarLossy, TimeSpan tsDuration)
+		private static CompressionTrial RateNonLosslessTrial(Bitmap original, WebPPreset preset, byte quality, byte speed, ICollection<CompressionTrial> trialInfo, byte[] bytarLossy, TimeSpan tsDuration)
 		{
 			using (Bitmap bmpLossy = WebP.Decode(bytarLossy)) {
 				// TODO : use PSNR-HVM-S to compute distortion
 				float[] sngarSsim = WebP.GetPictureDistortion(bmpLossy, original, DistortionMetric.StructuralSimilarity);
 				float[] sngarPsnr = WebP.GetPictureDistortion(bmpLossy, original, DistortionMetric.PeakSignalNoiseRatio);
-				CompressionTrial trial = new CompressionTrial() { CompressedData = bytarLossy, CompressionLevel = speed, Quality = quality, TimeTook = tsDuration, PictureSsim = sngarSsim[4], AlphaSsim = sngarSsim[3], PicturePsnr = sngarPsnr[4], AlphaPsnr = sngarPsnr[3] };
+				CompressionTrial trial = new CompressionTrial()
+				{
+					CompressedData = bytarLossy, CompressionLevel = speed, Quality = quality, TimeTook = tsDuration,
+					PictureSsim = sngarSsim[4], AlphaSsim = sngarSsim[3], PicturePsnr = sngarPsnr[4], AlphaPsnr = sngarPsnr[3],
+					Preset = preset
+				};
 				trialInfo.Add(trial);
 				return trial;
 			}

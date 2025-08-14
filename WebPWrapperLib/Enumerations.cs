@@ -1,26 +1,28 @@
-﻿namespace WebPWrapper
+﻿using System;
+
+namespace WebPWrapper
 {
 	#region | Predefined |
 	/// <summary>Enumerate some predefined settings for WebPConfig, depending on the type of source picture. These presets are used when calling WebPConfigPreset()</summary>
-	internal enum WebPPreset
+	public enum WebPPreset
 	{
 		/// <summary>Default preset</summary>
-		WEBP_PRESET_DEFAULT = 0,
+		Default = 0,
 
 		/// <summary>Digital picture, like portrait, inner shot</summary>
-		WEBP_PRESET_PICTURE,
+		Picture,
 
 		/// <summary>Outdoor photograph, with natural lighting</summary>
-		WEBP_PRESET_PHOTO,
+		Photo,
 
 		/// <summary>Hand or line drawing, with high-contrast details</summary>
-		WEBP_PRESET_DRAWING,
+		Drawing,
 
 		/// <summary>Small-sized colorful images</summary>
-		WEBP_PRESET_ICON,
+		Icon,
 
 		/// <summary>Text-like</summary>
-		WEBP_PRESET_TEXT
+		Text
 	}
 
 	/// <summary>Encoding error conditions</summary>
@@ -92,19 +94,20 @@
 	internal enum WebPImageHint
 	{
 		/// <summary>Default preset</summary>
-		WEBP_HINT_DEFAULT = 0,
+		Default = 0,
 
 		/// <summary>Digital picture, like portrait, inner shot</summary>
-		WEBP_HINT_PICTURE,
+		Picture,
 
 		/// <summary>Outdoor photograph, with natural lighting</summary>
-		WEBP_HINT_PHOTO,
+		Photo,
 
 		/// <summary>Discrete tone image (graph, map-tile etc)</summary>
-		WEBP_HINT_GRAPH,
+		Graph,
 
 		/// <summary>List terminator. Always last</summary>
-		WEBP_HINT_LAST
+		[Obsolete]
+		Last
 	}
 
 	/// <summary>Describes the byte-ordering of packed samples in memory</summary>
