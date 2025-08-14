@@ -7,8 +7,8 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 #endregion
-[assembly: AssemblyTitle("WebP42")]
-[assembly: AssemblyDescription("Optimizing Batch WebP converter")]
+[assembly: AssemblyTitle("WebP42: Optimizing Batch WebP converter")]
+[assembly: AssemblyDescription("WebP42: Optimizing Batch WebP converter")]
 #if DEBUG
 [assembly: AssemblyConfiguration("Debug")]
 #else
@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 #endif
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("WebP-Wrapper")]
-[assembly: AssemblyCopyright("Copyright © 2021-2023 René Rhéaume. AGPL3-licensed.")]
+[assembly: AssemblyCopyright("Copyright © 2021-2023, 2025 René Rhéaume. AGPL3-licensed.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
