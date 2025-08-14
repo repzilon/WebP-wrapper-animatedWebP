@@ -292,7 +292,11 @@ namespace WebP42
 
 		private static string RelativePath(string fullPath, string basePath)
 		{
-			return String.IsNullOrEmpty(basePath) ? fullPath : fullPath.Replace(basePath, ".");
+			var sep = Path.DirectorySeparatorChar;
+			if (!basePath.EndsWith(sep.ToString())) {
+				basePath += sep;
+			}
+			return String.IsNullOrEmpty(basePath) ? fullPath : fullPath.Replace(basePath, "." + sep);
 		}
 
 #if LossyExperiment

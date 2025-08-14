@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+// ReSharper disable SuggestVarOrType_BuiltInTypes
 #pragma warning disable IDE0007 // Use implicit type
 
 namespace WebP42
@@ -81,7 +82,7 @@ namespace WebP42
 		private static bool RemoveUnsupportedFiles(string path)
 		{
 			string strExt = Path.GetExtension(path);
-			return (strExt == ".config") || (strExt == ".svg") || (strExt == ".webp");
+			return (strExt == ".config") || (strExt == ".svg") || (strExt == ".webp") || (!strExt.Contains("g"));
 		}
 
 		private static List<string> FindImages(string directory, string globPattern)
